@@ -1,0 +1,24 @@
+$date
+	Fri Jun 19 21:38:54 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module test $end
+$var reg 1 ! clk $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+0!
+$end
+#5
+1!
+#10
+0!

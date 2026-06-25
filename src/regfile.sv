@@ -17,7 +17,7 @@ reg [31:0] registers [0:31];
 always @(posdege clk) begin
     if (rst_n==1'b0) begin
         for (int i = 0; i<32; i++) begin
-            register[i]<=32'b0
+            register[i]<=32'b0 // non-blocking assignment
         end
     end
 end

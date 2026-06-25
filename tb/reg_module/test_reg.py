@@ -7,7 +7,7 @@ import numpy
 @cocotb.test()
 async def random_write_read_test(dut):
     # Start a 10 ns clock
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
     await RisingEdge(dut.clk)
 
     # Init and reset
@@ -34,10 +34,10 @@ async def random_write_read_test(dut):
         write_value = random.randint(0, 0xFFFFFFFF)
 
         # perform reads
-        await Timer(1, units="ns") # wait a ns to test async read
+        await Timer(1, unit="ns") # wait a ns to test async read
         dut.address1.value = address1
         dut.address2.value = address2
-        await Timer(1, units="ns")
+        await Timer(1, unit="ns")
         assert dut.read_data1.value == theorical_regs[address1]
         assert dut.read_data2.value == theorical_regs[address2]
 
@@ -48,19 +48,19 @@ async def random_write_read_test(dut):
         await RisingEdge(dut.clk)
         dut.write_enable.value = 0
         theorical_regs[address3] = write_value
-        await Timer(1, units="ns")
+        await Timer(1, unit="ns")
 
     # try to write at 0 and check if it's still 0
-    await Timer(1, units="ns")
+    await Timer(1, unit="ns")
     dut.address3.value = 0
     dut.write_enable.value = 1
     dut.write_data.value = 0xAEAEAEAE
     await RisingEdge(dut.clk)
     dut.write_enable.value = 0
 
-    await Timer(1, units="ns") # wait a ns to test async read
+    await Timer(1, unit="ns") # wait a ns to test async read
     dut.address1.value = 0
-    await Timer(1, units="ns")
+    await Timer(1, unit="ns")
     print(dut.read_data1.value)
     assert int(dut.read_data1.value) == 0
 

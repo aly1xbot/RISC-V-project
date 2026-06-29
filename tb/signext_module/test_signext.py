@@ -15,7 +15,7 @@ async def random_write_read_test(dut):
     random_junk = 0b000000000000_1010101010101 
     raw_data = random_junk | imm
     await Timer(1, units="ns")
-    dut.raw_src.value = raw_data
+    dut.raw_imm.value = raw_data
     dut.imm_source.value = source
     await Timer(1, units="ns") # let it propagate ...
     assert dut.immediate.value == "00000000000000000000000001111011"
@@ -30,7 +30,7 @@ async def random_write_read_test(dut):
     random_junk = 0b000000000000_1010101010101 
     raw_data = random_junk | imm
     await Timer(1, units="ns")
-    dut.raw_src.value = raw_data
+    dut.raw_imm.value = raw_data
     dut.imm_source.value = source
     await Timer(1, units="ns") # let it propagate ...
     assert dut.immediate.value == "11111111111111111111111111010110"

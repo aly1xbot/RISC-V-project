@@ -25,9 +25,9 @@ async def test_cu (dut):
     await Timer(1, unit = "ns")
     dut.op.value = 0b0000011
     assert dut.regwrite.value == "1"
-    assert dut.imm_src.value == "00"
+    assert dut.imm_source.value == "00"
     assert dut.memwrite.value == "0"
-    assert dut.ALUcontrol.value =="000"
+    assert dut.alu_control.value =="000"
 
 
 

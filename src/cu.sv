@@ -5,9 +5,9 @@ module control(
     input logic alu_zero,
 
     output logic [2:0] alu_control,
-    output logic [1:0] imm_src,
-    output logic regwrite,
-    output logic memwrite
+    output logic [1:0] imm_source,
+    output logic reg_write,
+    output logic mem_write
     
 );
 
@@ -17,17 +17,17 @@ always_comb begin
     // lw command
     case(op)
         7'b0000011: begin
-            regwrite = 1'b1;
+            reg_write = 1'b1;
             imm_source = 2'b00;
-            memwrite = 1'b0;
+            mem_write = 1'b0;
             alu_op = 2'b00;
         
         end
 
         default: begin
-            regwrite = 1'b0;
+            reg_write = 1'b0;
             imm_source = 2'b00;
-            memwrite = 1'b0;
+            mem_write = 1'b0;
             alu_op = 2'b00;
         end
     endcase

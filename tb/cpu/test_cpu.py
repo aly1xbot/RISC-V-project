@@ -18,7 +18,6 @@ def hex_to_bin(hex_str):
     return bin_str.upper()
 
 
-@ cocotb.coroutine
 async def cpu_reset(dut):
     # init and reset
     dut.rst_n.value = 0
@@ -40,13 +39,13 @@ async def cpu_init_test(dut):
     # Note that this is loaded in sim directly via the verilog code
     # This load is only for expected
     imem = []
-    with open ("test_memory.hex", "r") as file:
+    with open ("test_imemory.hex", "r") as file:
         for line in file:
             line_content = line.split("//")[0].strip()
             if line_content:
                 imem.append(hex_to_bin(line_content))
 
-    for counter in range(5):
+    for counter in range(len(imem)):
         expected_instruction = imem[counter]
         assert dut.instruction.value == expected_instruction
         await RisingEdge(dut.clk)

@@ -19,6 +19,9 @@ always @(posedge clk) begin
     end
 end
 
+wire [31:0] instruction;
+
+
 // instruction memory which acting as ROM 
 memory #(
     .mem_init("./test_imemory.hex")
@@ -29,6 +32,7 @@ memory #(
     .write_data(32'b0),
     .write_enable(1'b0),
     .rst_n(1'b1),
+    // Memory Outputs
     .read_data(instruction)
 );
 
@@ -37,15 +41,16 @@ memory #(
 
 logic [6:0] op;
 assign op = instruction [6:0];
-logic [2:0] func3;
-assign func3 = instruction[14:12];
+logic [2:0] f3;
+assign f3 = instruction[14:12];
+wire alu_zero;
 // out of the control unit 
 wire [2:0] alu_control;
 wire [1:0] imm_source;
 wire reg_write;
 wire mem_write ;
 
-control control_unit(
+control control(
     .op(op),
     .func3(f3),
     .func7(7'b0),
@@ -80,11 +85,11 @@ regfile regfile(
     .clk(clk),
     .rst_n(rst_n),
     //read in 
-    .source_reg1(source_reg1),
-    .source_reg2(source_reg2),
+    .address1(source_reg1),
+    .address2(source_reg2),
     //read out 
-    .read_reg1(read_reg1),
-    .read_reg2(read_reg2),
+    .read_data1(read_reg1),
+    .read_data2(read_reg2),
     //write in
     .write_enable(reg_write),
     .write_data(write_back_data),

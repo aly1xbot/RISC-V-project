@@ -14,7 +14,7 @@ module control(
 //main decoder
 logic [1:0] alu_op;
 always_comb begin
-    // lw command
+    // lw command and sw command 
     case(op)
         7'b0000011: begin
             reg_write = 1'b1;
@@ -23,13 +23,21 @@ always_comb begin
             alu_op = 2'b00;
         
         end
+        7'b0100011 : begin
+            reg_write = 1'b0;
+            imm_source = 2'b01;
+            mem_write = 1'b1;
+            alu_op = 2'b00;
 
+        end
         default: begin
             reg_write = 1'b0;
             imm_source = 2'b00;
             mem_write = 1'b0;
             alu_op = 2'b00;
         end
+        
+
     endcase
 end
 

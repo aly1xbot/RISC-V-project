@@ -6,11 +6,10 @@ import random
 from cocotb.handle import LogicArrayObject
 
 
-@cocotb.test()
 async def set_unknown (dut):
     await Timer(1, unit = "ns")
     #set all input to unkwon before each test
-    dut.op.value = bin(LogicArrayObject("XXXXXXX"))
+    dut.op.value = 0b0000000
     # Uncomment the following throughout the course when needed
     #
     # dut.func3.value = bin(LogicArrayObject("XXXX"))
@@ -20,14 +19,31 @@ async def set_unknown (dut):
 
     await Timer (1, unit = "ns")
 @cocotb.test()
-async def test_cu (dut):
+async def lw_control_test (dut):
     await set_unknown(dut)
     await Timer(1, unit = "ns")
     dut.op.value = 0b0000011
-    assert dut.regwrite.value == "1"
+    await Timer(1, unit = "ns")
+    assert dut.reg_write.value == "1"
     assert dut.imm_source.value == "00"
-    assert dut.memwrite.value == "0"
+    assert dut.mem_write.value == "0"
     assert dut.alu_control.value =="000"
+
+
+@cocotb.test()
+async def sw_control_test(dut):
+    await set_unknown(dut)
+    # testing control signal for sw
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b0100011
+    await Timer(1, unit = "ns")
+    assert dut.reg_write.value == "0"
+    assert dut.imm_source.value == "01"
+    assert dut.mem_write.value == "1"
+    assert dut.alu_control.value == "000"
+
+
+
 
 
 

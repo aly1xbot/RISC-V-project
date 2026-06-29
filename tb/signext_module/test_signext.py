@@ -37,3 +37,35 @@ async def random_write_read_test(dut):
     # Python interprets int as uint. we sub 1<<32 as int to get corresponding negative value
     assert int(dut.immediate.value) - (1 << 32)  == -42
     await Timer(10, "ns")   # 确保仿真不会过早退出
+
+
+
+@cocotb.test()
+async def singext_s_type_test(dut):
+    for _ in range(100):
+        # test for the positive IMM 
+        await Timer(100, unit = "ns")
+        imm = random.randint(0,0b01111111111) 
+        imm_11_5 = imm >>5
+        imm_4_0 = imm & 0b000000011111
+        raw_data = (imm_11_5 << 18) | (imm_4_0)
+        source = 0b01
+        dut.raw_src.value = raw_data
+        dut.imm_source.value = source
+        await Timer(1, unit = "ns")
+        assert int(dut.immediate.value) == imm
+
+    # testing for the negative IMM value 
+
+        imm = random.randint(0b100000000000,0b111111111111) - (1<<12)
+        imm_11_5 = imm >> 5
+        imm_4_0 = imm & 0b000000011111
+        raw_data = (imm_11_5 << 18 | imm_4_0)
+        source = 0b01
+        dut.raw_src.value = raw_data
+        dut.imm_source.value = source
+        await Timer (1, unit = "ns")
+        assert int(dut.immediate.value) - (1 << 32) == imm
+
+
+

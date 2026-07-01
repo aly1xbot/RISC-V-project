@@ -18,9 +18,10 @@ async def set_unknown (dut):
     # dut.alu_last_bit.value = bin(LogicArrayObejct("X"))
 
     await Timer (1, unit = "ns")
+
+    # lw test 
 @cocotb.test()
 async def lw_control_test (dut):
-    await set_unknown(dut)
     await Timer(1, unit = "ns")
     dut.op.value = 0b0000011
     await Timer(1, unit = "ns")
@@ -29,10 +30,13 @@ async def lw_control_test (dut):
     assert dut.mem_write.value == "0"
     assert dut.alu_control.value =="000"
 
+    assert dut.alu_source.value == "1"
+    assert dut.write_back_source.value == "1"
 
+
+# sw test
 @cocotb.test()
 async def sw_control_test(dut):
-    await set_unknown(dut)
     # testing control signal for sw
     await Timer(10, unit = "ns")
     dut.op.value = 0b0100011
@@ -41,7 +45,23 @@ async def sw_control_test(dut):
     assert dut.imm_source.value == "01"
     assert dut.mem_write.value == "1"
     assert dut.alu_control.value == "000"
+    assert dut.alu_source.value == "1"
 
+
+
+# r command test
+
+@cocotb.test()
+async def r_control_test(dut):
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b0110011
+    dut.func3.value = 0b000
+    await Timer (1, unit = "ns")
+    assert dut.reg_write.value == "1"
+    assert dut.mem_write.value == "0"
+    assert dut.alu_control.value == "000"
+    assert dut.alu_source.value == "0"
+    assert dut.write_back_source.value == "0"
 
 
 

@@ -87,4 +87,13 @@ async def cpu_insrt_test(dut):
     # Wait a clock cycle for the instruction to execute
     await RisingEdge(dut.clk)
     # Check the value of mem[0xC]
+    print(f"x18 = {hex(dut.regfile.registers[18].value)}")
+    print(f"x19 = {hex(dut.regfile.registers[19].value)}")
+
     assert binary_to_hex(dut.data_memory.mem[test_address].value) == "DEADBEEF"
+    # r type command testing 
+    expected_result = (0xDEADBEEF + 0x00000AAA) & 0xFFFFFFFF
+    await RisingEdge(dut.clk) # lw x19 0x10(x0)
+    assert binary_to_hex(dut.regfile.registers[19].value) == "00000AAA"
+    await RisingEdge(dut.clk) # add x20 x18 x19
+    assert binary_to_hex(dut.regfile.registers[20].value) == hex(expected_result)[2:].upper()

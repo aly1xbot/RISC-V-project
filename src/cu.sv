@@ -61,6 +61,8 @@ always_comb begin
             case (func3)
                 // ADD
                 3'b000 : alu_control = 3'b000;
+                3'b111 : alu_control = 3'b010;
+                3'b110 : alu_control = 3'b011;
                 default : alu_control = 3'b111;
             endcase
         end

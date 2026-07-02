@@ -11,7 +11,9 @@ module alu (
 
 always_comb begin
     case (alu_control)
-        3'b000 : alu_result =src1+src2;
+        3'b000 : alu_result =src1 + src2;
+        3'b010 : alu_result = src1 & src2;
+        3'b011 : alu_result = src1 | src2;
         default : alu_result = 32'b0;
 
     endcase

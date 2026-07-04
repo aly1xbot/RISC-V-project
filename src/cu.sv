@@ -79,6 +79,17 @@ always_comb begin
             write_back_source = 2'b10;
 
         end
+        // addi instruction
+        7'b0010011 : begin
+            reg_write = 1'b1;
+            imm_source = 2'b00;
+            alu_source = 1'b1; //imm
+            mem_write = 1'b0;
+            alu_op = 2'b10;
+            write_back_source = 2'b00; //alu_result
+            branch = 1'b0;
+            jump = 1'b0;
+        end
 
         default: begin
             reg_write = 1'b0;

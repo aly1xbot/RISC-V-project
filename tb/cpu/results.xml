@@ -1,6 +1,0 @@
-<testsuites name="results">
-  <testsuite name="all" package="all">
-    <property name="random_seed" value="1783058258" />
-    <testcase name="cpu_insrt_test" classname="test_cpu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cpu/test_cpu.py" lineno="53" time="0.004153013229370117" sim_time_ns="16.0" ratio_time="3852.6243756817266" />
-  </testsuite>
-</testsuites>

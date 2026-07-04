@@ -149,3 +149,40 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.instruction.value) == "00000013"
 
 
+
+    # ...
+
+    ##################
+    # 00C000EF  //JAL TEST START :    jal x1 0xC          | #1 jump @PC+0xC | PC 0x44
+    # 00000013  //                    nop                 | NEVER EXECUTED  | PC 0x48
+    # 00C000EF  //                    jal x1 0xC          | #2 jump @PC-0x4 | PC 0x4C   
+    # FFDFF0EF  //                    jal x1 -4           | #2 jump @PC-0x4 | PC 0x50
+    # 00000013  //                    nop                 | NEVER EXECUTED  | PC 0x54
+    # 00C02383  //                    lw x7 0xC(x0)       | x7 <= DEADBEEF  | PC 0x58
+    ##################
+    print("\n\nTESTING JAL\n\n")
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "00C000EF"
+    assert binary_to_hex(dut.pc.value) == "00000044"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "FFDFF0EF"
+    assert binary_to_hex(dut.pc.value) == "00000050"
+    assert binary_to_hex(dut.regfile.registers[1].value) == "00000048"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "00C000EF"
+    assert binary_to_hex(dut.pc.value) == "0000004C"
+    assert binary_to_hex(dut.regfile.registers[1].value) == "00000054"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "00C02383"
+    assert binary_to_hex(dut.pc.value) == "00000058"
+    assert binary_to_hex(dut.regfile.registers[1].value) == "00000050"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[7].value) == "DEADBEEF"
+
+
+
+

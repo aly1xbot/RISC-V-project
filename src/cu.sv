@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module control(
     input logic [6:0] op,
     input logic [2:0] func3,
@@ -9,22 +10,24 @@ module control(
     output logic reg_write,
     output logic mem_write,
     output logic alu_source,
-    output logic write_back_source,
+    output logic [1:0] write_back_source,
     output logic pc_source
 );
 
 //main decoder
 logic [1:0] alu_op;
 logic branch;
+logic jump;
 always_comb begin
     // prevent latch problem
-    reg_write         = 1'b0;
-    imm_source        = 2'b00;
-    mem_write         = 1'b0;
-    alu_op            = 2'b00;
-    alu_source        = 1'b0;
-    write_back_source = 1'b0;
-    branch            = 1'b0;
+    reg_write = 1'b0;
+    imm_source = 2'b00;
+    mem_write = 1'b0;
+    alu_op = 2'b00;
+    alu_source = 1'b0;
+    write_back_source = 2'b00;
+    branch = 1'b0;
+    jump = 1'b0;
     // lw command and sw command 
     case(op)
         7'b0000011: begin
@@ -33,7 +36,7 @@ always_comb begin
             mem_write = 1'b0;
             alu_op = 2'b00;
             alu_source = 1'b1;
-            write_back_source = 1'b1;
+            write_back_source = 2'b01;
             branch = 1'b0; 
         
         end
@@ -51,7 +54,7 @@ always_comb begin
             mem_write = 1'b0;
             alu_op = 2'b10;
             alu_source = 1'b0;
-            write_back_source = 1'b0;
+            write_back_source = 2'b00;
             branch = 1'b0; 
 
         end
@@ -63,6 +66,17 @@ always_comb begin
             mem_write = 1'b0;
             alu_op = 2'b01;
             branch = 1'b1;
+
+        end
+        // j_type jal instruction
+        7'b1101111 : begin
+            reg_write = 1'b1;
+            imm_source = 2'b11;
+            alu_source = 1'b0;
+            mem_write = 1'b0;
+            branch = 1'b0;
+            jump = 1'b1;
+            write_back_source = 2'b10;
 
         end
 
@@ -94,7 +108,7 @@ always_comb begin
         default : alu_control = 3'b111;
     endcase
 
-assign pc_source = branch & alu_zero;
+assign pc_source = (alu_zero & branch) | jump;
 
 end
 endmodule

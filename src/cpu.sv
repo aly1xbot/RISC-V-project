@@ -7,15 +7,18 @@ module cpu (
 reg [31:0] pc;
 logic [31:0] pc_next;
 
-always_comb begin: pcSelect
-    pc_next = pc + 4;
+always_comb begin : pc_select
+    case (pc_source)
+        1'b1 : pc_next = pc + immediate; // pc_target
+        default: pc_next = pc + 4; // pc + 4
+    endcase
 end
 
 always @(posedge clk) begin
-    if (rst_n == 0) begin
-        pc<= 32'b0;
+    if(rst_n == 0) begin
+        pc <= 32'b0;
     end else begin
-        pc<= pc_next;
+        pc <= pc_next;
     end
 end
 
@@ -51,6 +54,7 @@ wire reg_write;
 wire mem_write ;
 wire alu_source;
 wire write_back_source;
+wire pc_source;
 
 control control(
     .op(op),
@@ -64,7 +68,8 @@ control control(
     .mem_write (mem_write),
     .imm_source (imm_source),
     .alu_source (alu_source),
-    .write_back_source (write_back_source)
+    .write_back_source (write_back_source),
+    .pc_source (pc_source)
 
 );
 

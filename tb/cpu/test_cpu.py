@@ -87,7 +87,6 @@ async def cpu_insrt_test(dut):
     # Wait a clock cycle for the instruction to execute
     await RisingEdge(dut.clk)
     # Check the value of mem[0xC]
-
     assert binary_to_hex(dut.data_memory.mem[test_address].value) == "DEADBEEF"
     # r type command testing 
     expected_result = (0xDEADBEEF + 0x00000AAA) & 0xFFFFFFFF
@@ -189,18 +188,43 @@ async def cpu_insrt_test(dut):
     # 1AB38D13  //                    addi x26 x7 0x1AB   | x26 <= DEADC09A
     # F2130C93  //                    addi x25 x6 0xF21   | x25 <= DEADBE10
     print("\n\nTESTING ADDI\n\n")
-    await Timer(1, unit = "ns")
-    await RisingEdge(dut.clk)
-    await RisingEdge(dut.clk)
     assert binary_to_hex(dut.instruction.value) == "1AB38D13"    
     assert not binary_to_hex(dut.regfile.registers[26].value) == "DEADC09A"
     await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "F2130C93"
     assert binary_to_hex(dut.regfile.registers[26].value) == "DEADC09A"
     await RisingEdge(dut.clk)
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[25].value) == "7F4FD38B"
 
+    ##################
+    # AUIPC TEST (PC befor is 0x64)
+    # 1F1FA297  //AUIPC TEST START :  auipc x5 0x1F1FA    | x5 <= 1F1FA064 
+    ##################
+
+    print("\n\nTESTING AUIPC\n\n")
+
+    # Check test's init state
+    assert binary_to_hex(dut.instruction.value) == "1F1FA297"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    # auipc x5 0x1F1FA
+    assert binary_to_hex(dut.regfile.registers[5].value) == "1F1FA064"
+
+    ##################
+    # LUI TEST
+    # 2F2FA2B7  //LUI TEST START :    lui x5 0x2F2FA      | x5 <= 2F2FA000
+    ##################
+    print("\n\nTESTING LUI\n\n")
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    # Check test's init state
+    assert binary_to_hex(dut.instruction.value) == "2F2FA2B7"
+
+    await RisingEdge(dut.clk) # lui x5 0x2F2FA 
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[5].value) == "2F2FA000"
 
 
 

@@ -3,18 +3,26 @@ module cpu (
     input logic rst_n
 
 );
+
 // program counter 
 reg [31:0] pc;
 logic [31:0] pc_next;
-logic [31:0] pc_target;
+logic [31:0] pc_plus_second_add;
 logic [31:0] pc_plus_four;
-assign pc_target = pc + immediate;
+
 assign pc_plus_four = pc + 4;
 
 always_comb begin : pc_select
     case (pc_source)
-        1'b1 : pc_next = pc_target; // pc_target
-        default: pc_next = pc_plus_four; // pc + 4
+        1'b0 : pc_next = pc_plus_four; // pc_target
+        1'b1 : pc_next = pc_plus_second_add;
+    endcase
+end
+
+always_comb begin : second_add_select
+    case(second_add_source)
+        1'b0 : pc_plus_second_add = pc + immediate; //auipc
+        1'b1 : pc_plus_second_add = immediate; //lui
     endcase
 end
 
@@ -53,12 +61,13 @@ assign f3 = instruction[14:12];
 wire alu_zero;
 // out of the control unit 
 wire [2:0] alu_control;
-wire [1:0] imm_source;
+wire [2:0] imm_source;
 wire reg_write;
 wire mem_write ;
 wire alu_source;
 wire [1:0] write_back_source;
 wire pc_source;
+wire second_add_source;
 
 control control(
     .op(op),
@@ -73,7 +82,8 @@ control control(
     .imm_source (imm_source),
     .alu_source (alu_source),
     .write_back_source (write_back_source),
-    .pc_source (pc_source)
+    .pc_source (pc_source),
+    .second_add_source(second_add_source)
 
 );
 
@@ -93,6 +103,7 @@ always_comb begin : write_back_source_select
         2'b00 : write_back_data = alu_result;
         2'b01 : write_back_data = mem_read;
         2'b10 : write_back_data = pc_plus_four;
+        2'b11 : write_back_data = pc_plus_second_add;
 
     endcase
 end
@@ -150,6 +161,7 @@ alu alu_inst (
 
 // data memory 
 wire [31:0] mem_read;
+
 
 memory #(
     .mem_init ("./test_dmemory.hex")

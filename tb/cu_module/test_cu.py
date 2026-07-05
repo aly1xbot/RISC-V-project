@@ -26,7 +26,7 @@ async def lw_control_test (dut):
     dut.op.value = 0b0000011
     await Timer(1, unit = "ns")
     assert dut.reg_write.value == "1"
-    assert dut.imm_source.value == "00"
+    assert dut.imm_source.value == "000"
     assert dut.mem_write.value == "0"
     assert dut.alu_control.value =="000"
 
@@ -43,7 +43,7 @@ async def sw_control_test(dut):
     dut.op.value = 0b0100011
     await Timer(1, unit = "ns")
     assert dut.reg_write.value == "0"
-    assert dut.imm_source.value == "01"
+    assert dut.imm_source.value == "001"
     assert dut.mem_write.value == "1"
     assert dut.alu_control.value == "000"
     assert dut.alu_source.value == "1"
@@ -105,7 +105,7 @@ async def beq_control_test(dut):
     dut.alu_zero.value = 0b0
     await Timer(1, units="ns")
 
-    assert dut.imm_source.value == "10"
+    assert dut.imm_source.value == "010"
     assert dut.alu_control.value == "001"
     assert dut.mem_write.value == "0"
     assert dut.reg_write.value == "0"
@@ -130,7 +130,7 @@ async def J_type_test(dut):
     dut.func3.value = 0b000 # jal
     await Timer(1, units="ns")
 
-    assert dut.imm_source.value == "11"
+    assert dut.imm_source.value == "011"
     assert dut.reg_write.value == "1"
     assert dut.mem_write.value == "0"
     assert dut.pc_source.value == "1"
@@ -147,12 +147,28 @@ async def addi_control_test(dut):
     dut.func3.value = 0b000
     await Timer(1, unit = "ns")
     assert dut.alu_control.value == "000"
-    assert dut.imm_source.value == "00"
+    assert dut.imm_source.value == "000"
     assert dut.mem_write.value == "0"
     assert dut.reg_write.value == "1"  
     assert dut.alu_source.value == "1"
     assert dut.write_back_source.value == "00"
     assert dut.pc_source.value == "0"
+
+
+@cocotb.test()
+async def auipc_control_test(dut):
+    await set_unknown(dut)
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b0010111
+    await Timer(1, unit = "ns")
+    assert dut.imm_source.value == "100"
+    assert dut.mem_write.value == "0"
+    assert dut.reg_write.value == "1"
+    assert dut.write_back_source.value == "11"
+    assert dut.branch.value == "0"
+    assert dut.second_add_source.value == "0"
+    assert dut.jump.value == "0"
+
 
 
 

@@ -117,3 +117,18 @@ async def slt_test(dut):
 
         assert int(dut.alu_result.value) == expected
         assert dut.alu_result.value == 31*"0" + str(int(dut.alu_result.value))
+
+@cocotb.test()
+async def xor_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b1000
+    for _ in range(1000):
+        src1 = random.randint(0, 0xFFFFFFFF)
+        src2 = random.randint(0, 0xFFFFFFFF)
+        dut.src1.value = src1
+        dut.src2.value = src2
+
+        await Timer(1, unit = "ns")
+        expected =src1 ^ src2
+        assert int(dut.alu_result.value) == int(expected)
+

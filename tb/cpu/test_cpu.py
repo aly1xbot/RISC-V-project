@@ -242,5 +242,19 @@ async def cpu_insrt_test(dut):
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[23].value) == "00000001"
 
+    print("\n\nTESTING SLTI\n\n")
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "AAA94913"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[18].value) == "21524445"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert (
+        binary_to_hex(dut.regfile.registers[19].value) ==
+        binary_to_hex(dut.regfile.registers[18].value)
+    )
+
 
 

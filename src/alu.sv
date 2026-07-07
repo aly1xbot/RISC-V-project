@@ -15,6 +15,7 @@ always_comb begin
         3'b010 : alu_result = src1 & src2;
         3'b011 : alu_result = src1 | src2;
         3'b001 : alu_result = src1 + (~src2 + 1'b1); // new subtraction command 
+        3'b101 : alu_result = {31'b0, $signed(src1) < $signed(src2)};
         default : alu_result = 32'b0;
 
     endcase

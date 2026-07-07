@@ -31,6 +31,7 @@ always_comb begin
     jump = 1'b0;
     // lw command and sw command 
     case(op)
+        // I-type command 
         7'b0000011: begin
             reg_write = 1'b1;
             imm_source = 3'b000;
@@ -132,7 +133,8 @@ always_comb begin
                 3'b000 : alu_control = 3'b000;
                 3'b111 : alu_control = 3'b010;
                 3'b110 : alu_control = 3'b011;
-                default : alu_control = 3'b111;
+                // SLTI
+                3'b010 : alu_control = 3'b101; // NEW !
             endcase
         end
         // B-type decoder

@@ -15,7 +15,8 @@ always_comb begin
         4'b0010 : alu_result = src1 & src2; // andi
         4'b0011 : alu_result = src1 | src2; // ori
         4'b0001 : alu_result = src1 + (~src2 + 1'b1); // new subtraction command 
-        4'b0101 : alu_result = {31'b0, $signed(src1) < $signed(src2)};
+        4'b0101 : alu_result = {31'b0, $signed(src1) < $signed(src2)}; //slt test
+        4'b0111 : alu_result = {31'b0, src1 < src2}; //sltiu updating
         4'b1000 : alu_result = src1 ^ src2;
         default : alu_result = 32'b0;
 

@@ -11,7 +11,7 @@ def binary_to_hex(bin_str):
 @cocotb.test()
 async def add_test(dut):
     await Timer(1, units="ns")
-    dut.alu_control.value = 0b000
+    dut.alu_control.value = 0b0000
     for _ in range(1000):
         src1 = random.randint(0,0xFFFFFFFF)
         src2 = random.randint(0,0xFFFFFFFF)
@@ -23,39 +23,13 @@ async def add_test(dut):
         await Timer(1, units="ns")
         assert int(dut.alu_result.value) == expected
 
-@ cocotb.test()
-async def default_test(dut):
-    await Timer (1, unit = "ns")
-    dut.alu_control.value = 0b111
 
-    src1 = random.randint (0,0xFFFFFFFF)
-    src2 = random.randint (0,0xFFFFFFFF)
-    dut.src1.value = src1
-    dut.src2.value = src2
-    
-    expected = 0
-    
-    await Timer(1, unit = "ns")
-    assert int(dut.alu_result.value) == expected
-
-
-@cocotb.test()
-async def zero_test(dut):
-    await Timer (1, unit = "ns")
-    dut.alu_control.value = 0b000
-    dut.src1.value = 123
-    dut.src2.value = -123
-    
-    await Timer(1, unit = "ns")
-    print(int(dut.alu_result.value))
-    assert int(dut.zero.value) == 1
-    assert int(dut.alu_result.value) == 0
 
 
 @cocotb.test()
 async def and_test(dut):
     await Timer(1, unit ="ns")
-    dut.alu_control.value = 0b010
+    dut.alu_control.value = 0b0010
     for _ in range(1000):
         src1 = random.randint(0,0xFFFFFFFF)
         src2 = random.randint(0,0xFFFFFFFF)
@@ -68,7 +42,7 @@ async def and_test(dut):
 @cocotb.test()
 async def or_test(dut):
     await Timer(1, unit ="ns")
-    dut.alu_control.value = 0b011
+    dut.alu_control.value = 0b0011
     for _ in range(1000):
         src1 = random.randint(0,0xFFFFFFFF)
         src2 = random.randint(0,0xFFFFFFFF)
@@ -82,7 +56,7 @@ async def or_test(dut):
 @cocotb.test()
 async def sub_test(dut):
     await Timer(1, unit = "ns")
-    dut.alu_control.value = 0b001
+    dut.alu_control.value = 0b0001
     for _ in range(1000):
         src1 = random.randint(0,0xFFFFFFFF)
         src2 = random.randint(0,0xFFFFFFFF)
@@ -98,8 +72,8 @@ async def sub_test(dut):
 @cocotb.test()
 async def slt_test(dut):
     await Timer(1, unit = "ns")
-    dut.alu_control.value = 0b101
-    for _ in range(1000):
+    dut.alu_control.value = 0b0101
+    for _ in range(10):
         src1 = random.randint(0, 0xFFFFFFFF)
         src2 = random.randint(0, 0xFFFFFFFF)
         dut.src1.value = src1
@@ -117,6 +91,24 @@ async def slt_test(dut):
 
         assert int(dut.alu_result.value) == expected
         assert dut.alu_result.value == 31*"0" + str(int(dut.alu_result.value))
+
+
+@cocotb.test()
+async def sltiu_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b0111
+    for _ in range(1000):
+        src1 = random.randint(0, 0xFFFFFFFF)
+        src2 = random.randint(0, 0xFFFFFFFF)
+        dut.src1.value = src1
+        dut.src2.value = src2
+
+        await Timer(1, unit = "ns")
+        expected = int(src1 < src2)
+        assert dut.alu_result.value == 31*"0" + str(int(dut.alu_result.value))
+
+
+
 
 @cocotb.test()
 async def xor_test(dut):

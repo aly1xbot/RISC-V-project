@@ -81,7 +81,7 @@ always_comb begin
             write_back_source = 2'b10;
 
         end
-        // addi instruction
+        // addi instruction, all the I-type instruction
         7'b0010011 : begin
             reg_write = 1'b1;
             imm_source = 3'b000;

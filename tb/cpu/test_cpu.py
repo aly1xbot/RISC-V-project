@@ -242,7 +242,24 @@ async def cpu_insrt_test(dut):
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[23].value) == "00000001"
 
-    print("\n\nTESTING SLTI\n\n")
+    ##################
+    # FFF9BB13  //SLTIU TEST START :  sltiu x22 x19 0xFFF | x22 <= 00000001
+    # 0019BB13  //                    sltiu x22 x19 0x001 | x22 <= 00000000
+    ##################
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "FFF9BB13"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[22].value) == "00000001"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[22].value) == "00000000"
+
+
+
+    #xori test
+    print("\n\nTESTING XORI\n\n")
     await RisingEdge(dut.clk)
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "AAA94913"

@@ -151,7 +151,7 @@ always_comb begin
                 3'b101 : begin
                     case(func7)
                     7'b0000000 : alu_control = 4'b0110; // srli
-                    7'b0100000 : alu_control = 4'b1001; // sra instruction
+                    7'b0100000 : alu_control = 4'b1001; // srai instruction
                     default : alu_control = 4'b0000;
                     endcase
                 end

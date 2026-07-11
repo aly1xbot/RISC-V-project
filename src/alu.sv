@@ -21,6 +21,14 @@ always_comb begin
         4'b1000 : alu_result = src1 ^ src2; //xori update
         4'b0100 : alu_result = src1 << shamt; // slli update
         4'b0110 : alu_result = src1 >> shamt; // srli update
+        4'b1001 : begin
+            alu_result = src1 >> shamt;   
+            if (src1[31])
+                alu_result = alu_result | (32'hFFFFFFFF << (32 - shamt));
+
+
+        end
+
 
 
         default : alu_result = 32'b0;

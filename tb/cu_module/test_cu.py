@@ -252,6 +252,20 @@ async def srli_test(dut):
 
 
 
-
+@cocotb.test()
+async def srai_test(dut):
+    await set_unknown(dut)
+    await Timer(1, unit = "ns")
+    dut.op.value = 0b0010011
+    dut.func3.value = 0b101
+    dut.func7.value = 0b0100000
+    await Timer(1, unit = "ns")
+    assert dut.alu_control.value == "1001"
+    assert dut.imm_source.value == "000"
+    assert dut.mem_write.value == "0"
+    assert dut.reg_write.value == "1"
+    assert dut.alu_source.value == "1"
+    assert dut.write_back_source.value == "00"
+    assert dut.pc_source.value == "0"
 
 

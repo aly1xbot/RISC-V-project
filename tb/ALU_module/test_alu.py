@@ -152,3 +152,24 @@ async def srli_test(dut):
         await Timer(1, unit = "ns")
         expected = (src1 >> shamt) & 0xFFFFFFFF
         assert int(dut.alu_result.value) == int(expected)
+
+
+@cocotb.test()
+async def srai_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b1001
+    for _ in range(100):
+        src1 = random.randint(0,0xFFFFFFFF)
+        shamt = random.randint(0,0x1F)
+        dut.src1.value = src1
+        dut.shamt.value = shamt
+        if src1 & 0x80000000:
+            signed = src1 - 0x100000000
+        else:
+            signed = src1
+        result = signed >> shamt
+        expected = result & 0xFFFFFFFF
+
+
+        await Timer(1, unit="ns")
+        assert int(dut.alu_result.value) == expected

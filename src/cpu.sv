@@ -9,6 +9,18 @@ reg [31:0] pc;
 logic [31:0] pc_next;
 logic [31:0] pc_plus_second_add;
 logic [31:0] pc_plus_four;
+wire [31:0] immediate;   // moved before use in second_add_select
+
+// control signals (moved before pc_select and second_add_select)
+wire pc_source;
+wire second_add_source;
+wire alu_zero;
+wire [3:0] alu_control;
+wire [2:0] imm_source;
+wire reg_write;
+wire mem_write ;
+wire alu_source;
+wire [1:0] write_back_source;
 
 assign pc_plus_four = pc + 4;
 
@@ -35,8 +47,10 @@ always @(posedge clk) begin
 end
 
 wire [31:0] instruction;
-
-
+logic [6:0] func7;
+logic [4:0] shamt;
+assign func7 = instruction[31:25];
+assign shamt = instruction[24:20];
 // instruction memory which acting as ROM 
 memory #(
     .mem_init("./test_imemory.hex")
@@ -58,22 +72,13 @@ logic [6:0] op;
 assign op = instruction [6:0];
 logic [2:0] f3;
 assign f3 = instruction[14:12];
-wire alu_zero;
-// out of the control unit 
-wire [3:0] alu_control;
-wire [2:0] imm_source;
-wire reg_write;
-wire mem_write ;
-wire alu_source;
-wire [1:0] write_back_source;
-wire pc_source;
-wire second_add_source;
 
 control control(
     .op(op),
     .func3(f3),
-    .func7(7'b0),
+    .func7(func7),
     .alu_zero(alu_zero),
+    .shamt(shamt),
 
     //output 
     .alu_control(alu_control),
@@ -97,6 +102,10 @@ assign dest_reg = instruction[11:7];
 wire [31:0] read_reg1;
 wire [31:0] read_reg2;
 
+// alu_result and mem_read moved before write_back_source_select
+wire [31:0] alu_result;
+wire [31:0] mem_read;
+
 logic [31:0] write_back_data;
 always_comb begin : write_back_source_select
     case (write_back_source)
@@ -107,6 +116,9 @@ always_comb begin : write_back_source_select
 
     endcase
 end
+
+
+
 
 
 regfile regfile(
@@ -130,7 +142,6 @@ regfile regfile(
 
 logic [24:0] raw_imm;
 assign raw_imm = instruction[31:7];
-wire [31:0] immediate;
 
 signext sign_extender (
     .raw_src (raw_imm),
@@ -141,7 +152,6 @@ signext sign_extender (
 
 //ALU part 
 logic [31:0] alu_src2;
-wire [31:0] alu_result;
 
 always_comb begin: alu_source_select
     case(alu_source)
@@ -155,13 +165,12 @@ alu alu_inst (
     .src1(read_reg1),
     .src2(alu_src2),
     .alu_result(alu_result),
-    .zero(alu_zero)
+    .zero(alu_zero),
+    .shamt(shamt)
 
 );
 
 // data memory 
-wire [31:0] mem_read;
-
 
 memory #(
     .mem_init ("./test_dmemory.hex")
@@ -176,8 +185,5 @@ memory #(
     // Memory outputs
     .read_data(mem_read)
 );
-
-
-
 
 endmodule

@@ -2,6 +2,7 @@ module alu (
     input logic [3:0] alu_control,
     input logic [31:0] src1,
     input logic [31:0] src2,
+    input logic [4:0]shamt,
 
     output logic [31:0] alu_result,
     output logic zero
@@ -17,7 +18,11 @@ always_comb begin
         4'b0001 : alu_result = src1 + (~src2 + 1'b1); // new subtraction command 
         4'b0101 : alu_result = {31'b0, $signed(src1) < $signed(src2)}; //slt test
         4'b0111 : alu_result = {31'b0, src1 < src2}; //sltiu updating
-        4'b1000 : alu_result = src1 ^ src2;
+        4'b1000 : alu_result = src1 ^ src2; //xori update
+        4'b0100 : alu_result = src1 << shamt; // slli update
+        4'b0110 : alu_result = src1 >> shamt; // srli update
+
+
         default : alu_result = 32'b0;
 
     endcase

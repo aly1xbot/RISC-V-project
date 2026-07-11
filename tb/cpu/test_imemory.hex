@@ -40,5 +40,9 @@ AAA9F913  //ANDI TEST START :   andi x18 x19 0xAAA  | x18 <= 21524000
 00097993  //                    andi x19 x18 0x000  | x19 <= 00000000
 00000013  //                    nop                 | NEVER EXECUTED
 AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
+00000013  //                    nop                 | NEVER EXECUTED
+00AD1993  //SLLI TEST START :   slli x19 x26 0x00A  | x19 <= B7026800
+00000013  //                    nop                 | NEVER EXECUTED
+00AD5993  //SRLI TEST START :   srli x19 x26 0x00A  | x19 <= 00037B70
 00000013  //NOP
 00000013  //NOP

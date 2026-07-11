@@ -124,3 +124,31 @@ async def xor_test(dut):
         expected =src1 ^ src2
         assert int(dut.alu_result.value) == int(expected)
 
+
+@cocotb.test()
+async def slli_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b0100
+    for _ in range(100):
+        src1 = random.randint(0,0xFFFFFFFF)
+        shamt = random.randint(0,0x1F)
+        dut.src1.value = src1
+        dut.shamt.value = shamt
+
+        await Timer(1, unit = "ns")
+        expected = (src1 << shamt) & 0xFFFFFFFF
+        assert int(dut.alu_result.value) == int(expected)
+
+@cocotb.test()
+async def srli_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b0110
+    for _ in range(100):
+        src1 = random.randint(0,0xFFFFFFFF)
+        shamt = random.randint(0,0x1F)
+        dut.src1.value = src1
+        dut.shamt.value = shamt
+
+        await Timer(1, unit = "ns")
+        expected = (src1 >> shamt) & 0xFFFFFFFF
+        assert int(dut.alu_result.value) == int(expected)

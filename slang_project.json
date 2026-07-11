@@ -1,0 +1,11 @@
+{
+    "include_dirs": ["./src"],
+    "source_files": [
+        "./src/cpu.sv",
+        "./src/control.sv",
+        "./src/memory.sv",
+        "./src/regfile.sv",
+        "./src/signext.sv",
+        "./src/alu.sv"
+    ]
+}

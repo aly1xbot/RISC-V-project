@@ -4,6 +4,7 @@ module control(
     input logic [2:0] func3,
     input logic [6:0] func7,
     input logic alu_zero,
+    input logic [4:0] shamt,
 
     output logic [3:0] alu_control,
     output logic [2:0] imm_source,
@@ -130,7 +131,7 @@ always_comb begin
         2'b10 : begin
             case (func3)
                 // ADD
-                3'b000 : alu_control = 4'b0000; 
+                3'b000 : alu_control = 4'b0000; // add
                 3'b111 : alu_control = 4'b0010; // andi
                 3'b110 : alu_control = 4'b0011; // ori
                 // SLTI
@@ -139,6 +140,21 @@ always_comb begin
                 3'b011 : alu_control = 4'b0111;
                 // XORI
                 3'b100 : alu_control = 4'b1000;
+                // slli
+                3'b001 : begin
+                    case(func7)
+                        7'b0000000 : alu_control = 4'b0100;
+                        default : alu_control = 4'b0000;
+                    endcase
+                end
+                //srli
+                3'b101 : begin
+                    case(func7)
+                    7'b0000000 : alu_control = 4'b0110; // srli
+                    7'b0100000 : alu_control = 4'b1001; // sra instruction
+                    default : alu_control = 4'b0000;
+                    endcase
+                end
             endcase
         end
         // B-type decoder

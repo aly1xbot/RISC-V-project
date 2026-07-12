@@ -32,7 +32,7 @@ always_comb begin
     jump = 1'b0;
     // lw command and sw command 
     case(op)
-        // I-type command 
+        // and command
         7'b0000011: begin
             reg_write = 1'b1;
             imm_source = 3'b000;
@@ -82,7 +82,7 @@ always_comb begin
             write_back_source = 2'b10;
 
         end
-        // addi instruction, all the I-type instruction
+        // addi instruction, all the I-type instruction and all the R-type instruction
         7'b0010011 : begin
             reg_write = 1'b1;
             imm_source = 3'b000;
@@ -131,7 +131,13 @@ always_comb begin
         2'b10 : begin
             case (func3)
                 // ADD
-                3'b000 : alu_control = 4'b0000; // add
+                3'b000 : begin
+                    if(op == 7'b0110011) begin // R-type
+                        alu_control = func7[5] ? 4'b0001 : 4'b0000;
+                    end else begin // I-Type
+                        alu_control = 4'b0000;
+                    end
+                end
                 3'b111 : alu_control = 4'b0010; // andi
                 3'b110 : alu_control = 4'b0011; // ori
                 // SLTI

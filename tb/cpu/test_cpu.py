@@ -325,16 +325,26 @@ async def cpu_insrt_test(dut):
 
     #srai test
     print("\n\nSRAI TEST\n\n")
-    
+
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "409CD913"
-    print(f"alu_control = {dut.alu_control.value}")   # 应为 0b1001
-    print(f"shamt = {dut.shamt.value}")               # 应为 0b01001 (9)
-    print(f"src1 = {hex(dut.alu_inst.src1.value)}")   # 应为 0x7F4FD38B
+
     assert binary_to_hex(dut.regfile.registers[25].value) == "7F4FD38B"
     await RisingEdge(dut.clk)
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[18].value) == "003FA7E9"
+
+
+    ##################
+    # 412A8933  //SUB TEST START :    sub x18 x21 x18     | x18 <= FFFFF8FF
+    ##################
+    print("\n\nTESTING SUB\n\n")
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "412A8933"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[18].value) == "DE6DE0A0"
 
 
 

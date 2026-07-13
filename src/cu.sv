@@ -5,6 +5,7 @@ module control(
     input logic [6:0] func7,
     input logic alu_zero,
     input logic [4:0] shamt,
+    
 
     output logic [3:0] alu_control,
     output logic [2:0] imm_source,
@@ -30,6 +31,7 @@ always_comb begin
     write_back_source = 2'b00;
     branch = 1'b0;
     jump = 1'b0;
+    second_add_source = 1'b0; 
     // lw command and sw command 
     case(op)
         // and command
@@ -124,6 +126,10 @@ always_comb begin
     endcase
 end
 
+
+
+
+
 always_comb begin 
     case(alu_op)
         //lw, sw
@@ -165,6 +171,7 @@ always_comb begin
         end
         // B-type decoder
         2'b01 : alu_control = 4'b0001;
+        default : alu_control = 4'b0000;
     endcase
 
 assign pc_source = (alu_zero & branch) | jump;

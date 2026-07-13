@@ -49,8 +49,8 @@ end
 wire [31:0] instruction;
 logic [6:0] func7;
 logic [4:0] shamt;
+assign shamt = instruction [24:20];
 assign func7 = instruction[31:25];
-assign shamt = instruction[24:20];
 // instruction memory which acting as ROM 
 memory #(
     .mem_init("./test_imemory.hex")
@@ -160,15 +160,38 @@ always_comb begin: alu_source_select
     endcase
 end
 
+logic [4:0] shift_amount;
+
+always_comb begin
+    case(op)
+
+        7'b0010011: begin
+            // shift immediate
+            shift_amount = instruction[24:20];
+        end
+
+        7'b0110011: begin
+            // R-type shift
+            shift_amount = read_reg2[4:0];
+        end
+
+        default:
+            shift_amount = 5'b0;
+
+    endcase
+end
+
 alu alu_inst (
     .alu_control(alu_control),
     .src1(read_reg1),
     .src2(alu_src2),
     .alu_result(alu_result),
     .zero(alu_zero),
-    .shamt(shamt)
+    .shamt(shift_amount)
 
 );
+
+
 
 // data memory 
 

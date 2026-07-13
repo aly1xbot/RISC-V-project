@@ -23,7 +23,7 @@ always_comb begin
                             raw_src[23:14],
                             1'b0};
         3'b100 : immediate = {raw_src[24:5], 12'b000000000000};
-        default: immediate = 12'b0;
+        default: immediate = 32'b0;
     endcase
 end
 

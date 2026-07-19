@@ -43,7 +43,7 @@ AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
 00000013  //                    nop                 | NEVER EXECUTED
 00AD1993  //SLLI TEST START :   slli x19 x26 0x00A  | x19 <= B7026800
 00000013  //                    nop                 | NEVER EXECUTED
-00AD5993  //SRLI TEST START :   srli x19 x26 0x00A  | x19 <= 00037B70
+00AD5993  //SRLI TEST START :   srli x19 x26 0x00A  | x19 <= 0037AB70
 00000013  //                    nop                 | NEVER EXECUTED
 409CD913  //SARI TEST START :   srai x18 x25 0x9    | x18 <= 003FA7E9
 00000013  //                    nop                 | NEVER EXECUTED
@@ -53,8 +53,8 @@ AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
 00791933  //                    sll x18 x18 x7      | x18 <= 6DE0A000
 013B28B3  //SLT TEST START :    slt x17 x22 x23     | x17 <= 00000001
 013B38B3  //SLTU TEST START :   sltu x17 x22 x23    | x17 <= 00000001
-013948B3  //XOR TEST START :    xor x17 x18 x19     | x17 <= 000711F0
-0079D433  //SRL TEST START :    srl x8 x19 x7       | x8  <= 00FFFFEE
+013948B3  //XOR TEST START :    xor x17 x18 x19     | x17 <= 6DD70B70
+0079D433  //SRL TEST START :    srl x8 x19 x7       | x8  <= 000037AB
 4079D433  //SRA TEST START :    sra x8 x19 x7       | x8  <= FFFFFFEE
 00000013  //NOP
 00000013  //NOP

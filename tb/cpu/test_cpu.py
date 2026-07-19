@@ -371,6 +371,31 @@ async def cpu_insrt_test(dut):
     await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[17].value) == "00000001"
 
+    print("\n\n Testing SLTU\n\n")
+    assert binary_to_hex(dut.instruction.value) == "013B38B3"
+    assert binary_to_hex(dut.regfile.registers[23]) == "00000001"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[17]) == "00000001"
+
+    print("\n\n Testing XOR")
+    assert binary_to_hex(dut.instruction.value) == "013948B3"
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+    assert binary_to_hex(dut.regfile.registers[19].value) == "0037AB70"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[17].value) == "6DD70B70"
+
+    print("\n\n TESTING SRL\n\n")
+    assert binary_to_hex(dut.instruction.value) == "0079D433"
+    assert binary_to_hex(dut.regfile.registers[7]) == "00000008"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+
+    print("\n\n TESTING SRA\n\n")
+
+
 
 
 

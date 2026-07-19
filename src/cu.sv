@@ -148,7 +148,7 @@ always_comb begin
                 3'b110 : alu_control = 4'b0011; // ori
                 // SLTI
                 3'b010 : alu_control = 4'b0101; // NEW !
-                // SLTIU
+                // SLTIU and SLTU
                 3'b011 : alu_control = 4'b0111;
                 // XORI
                 3'b100 : alu_control = 4'b1000;

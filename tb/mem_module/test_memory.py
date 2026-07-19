@@ -26,7 +26,7 @@ async def memory_data_test(dut):
         dut.address.value = address
         await Timer(1, units="ns")
         assert dut.read_data.value == "00000000000000000000000000000000"
-      
+    
     # Test: Write and read back data
     test_data = [
         (0, 0xDEADBEEF),

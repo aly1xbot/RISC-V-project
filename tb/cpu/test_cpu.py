@@ -394,6 +394,33 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
 
     print("\n\n TESTING SRA\n\n")
+    assert binary_to_hex(dut.instruction.value) == "4079D433"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+
+
+    print("\n\nTESTING BLT\n\n")
+    assert binary_to_hex(dut.instruction.value) == "0088C463"
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+    assert binary_to_hex(dut.regfile.registers[17].value) == "6DD70B70"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "01144463"
+    await RisingEdge(dut.clk) # blt x8 x17 0x8
+    await Timer(1, unit = "ns")
+    assert not binary_to_hex(dut.instruction.value) == "00C00413"
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+
+    print("\n\nTESTING BNE\n\n")
+
+    assert binary_to_hex(dut.instruction.value) == "00891463"
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert not binary_to_hex(dut.instruction.value) == "000037B7"
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
 
 
 

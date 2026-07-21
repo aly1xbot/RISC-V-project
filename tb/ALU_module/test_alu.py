@@ -173,3 +173,26 @@ async def srai_test(dut):
 
         await Timer(1, unit="ns")
         assert int(dut.alu_result.value) == expected
+
+
+@cocotb.test()
+async def last_bit_test(dut):
+    await Timer(1, unit = "ns")
+    dut.alu_control.value = 0b0101
+    for _ in range(100):
+        src1 = random.randint(0,0xFFFFFFFF)
+        src2 = random.randint(0,0xFFFFFFFF)
+        dut.src1.value = src1
+        dut.src2.value = src2
+
+        await Timer(1, units="ns")
+        if src1 >> 31 == 0 and src2 >> 31 == 0:
+            expected = int(src1 < src2)
+        elif src1 >> 31 == 0 and src2 >> 31 == 1:
+            expected = int(src1 < (src2 - (1<<32)))
+        elif src1 >> 31 == 1 and src2 >> 31 == 0:
+            expected = int((src1 - (1<<32)) < src2)
+        elif src1 >> 31 == 1 and src2 >> 31 == 1:
+            expected = int((src1 - (1<<32)) < (src2 - (1<<32)))
+            
+        assert dut.last_bit.value == str(expected)

@@ -5,6 +5,7 @@ module control(
     input logic [6:0] func7,
     input logic alu_zero,
     input logic [4:0] shamt,
+    input logic alu_last_bit,
     
 
     output logic [3:0] alu_control,
@@ -170,11 +171,43 @@ always_comb begin
             endcase
         end
         // B-type decoder
-        2'b01 : alu_control = 4'b0001;
+        2'b01 : begin
+            case (func3)
+                //BEQ
+                3'b000 : alu_control = 4'b0001;
+                //BLT
+                3'b100 : alu_control = 4'b0101;
+                //BNE
+                3'b001 : alu_control = 4'b0001;
+                //BGE
+                3'b101 : alu_control = 4'b0101;
+                default : alu_control = 4'b0000;
+            endcase
+        end
         default : alu_control = 4'b0000;
     endcase
-
-assign pc_source = (alu_zero & branch) | jump;
-
 end
+
+logic assert_branch;
+
+always_comb begin : branch_logic_decode
+    case (func3)
+        // BEQ
+        3'b000 : assert_branch = alu_zero & branch;
+        // BLT
+        3'b100 : assert_branch = alu_last_bit & branch;
+        //BNE
+        3'b001 : assert_branch = ~alu_zero & branch;
+        //BGE
+        3'b101 : assert_branch = ~alu_last_bit & branch;
+        //bltu
+        //bgeu
+        default : assert_branch = 1'b0;
+    endcase
+end
+
+
+assign pc_source = assert_branch | jump;
+
+
 endmodule

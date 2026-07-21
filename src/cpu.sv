@@ -72,6 +72,8 @@ logic [6:0] op;
 assign op = instruction [6:0];
 logic [2:0] f3;
 assign f3 = instruction[14:12];
+logic alu_last_bit;
+assign alu_last_bit = last_bit;
 
 control control(
     .op(op),
@@ -79,6 +81,7 @@ control control(
     .func7(func7),
     .alu_zero(alu_zero),
     .shamt(shamt),
+    .alu_last_bit(alu_last_bit),
 
     //output 
     .alu_control(alu_control),
@@ -162,6 +165,8 @@ end
 
 logic [4:0] shift_amount;
 
+wire last_bit;
+
 always_comb begin
     case(op)
 
@@ -187,7 +192,8 @@ alu alu_inst (
     .src2(alu_src2),
     .alu_result(alu_result),
     .zero(alu_zero),
-    .shamt(shift_amount)
+    .shamt(shift_amount),
+    .last_bit(last_bit)
 
 );
 

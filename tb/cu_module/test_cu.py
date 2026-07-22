@@ -365,3 +365,41 @@ async def bge_control_test(dut):
     assert dut.assert_branch.value == "0"
     assert dut.pc_source.value == "0"
 
+
+@cocotb.test()
+async def bltu_control_test(dut):
+    await set_unknown(dut)
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b1100011
+    dut.func3.value = 0b110
+    dut.alu_unsigned_less.value = 0b0
+    await Timer(1, unit = "ns")
+    assert dut.assert_branch.value == "0"
+    assert dut.alu_control.value == "0111"
+    assert dut.pc_source.value == "0"
+
+    await Timer(3, unit = "ns")
+    dut.alu_unsigned_less.value = 0b1
+    await Timer(1, unit = "ns")
+    assert dut.assert_branch.value == "1"
+    assert dut.pc_source.value == "1"
+
+
+@cocotb.test()
+async def bgeu_control_test(dut):
+    await set_unknown(dut)
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b1100011
+    dut.func3.value = 0b111
+    dut.alu_unsigned_less.value = 0b0
+    await Timer(1, unit = "ns")
+    assert dut.assert_branch.value == "1"
+    assert dut.alu_control.value == "0111"
+    assert dut.pc_source.value == "1"
+
+    await Timer(3, unit = "ns")
+    dut.alu_unsigned_less.value = 0b1
+    await Timer(1, unit = "ns")
+    assert dut.assert_branch.value == "0"
+    assert dut.pc_source.value == "0"
+

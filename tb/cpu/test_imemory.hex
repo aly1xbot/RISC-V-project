@@ -59,6 +59,14 @@ AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
 0088C463  //BLT TEST START :    blt x17 x8 0x8      | not taken : x8 pos (sign), x17 pos (no sign) not taken as x8 < x17
 01144463  //                    blt x8 x17 0x8      | taken : x8 neg (sign), x17 pos (no sign)
 00C00413  //                    addi x8 x0 0xC      | NEVER EXECUTED (check value)
-00891463  //BNE TEST START :    bne x18 x8 0x8      | taken as x18 is not equal to x8 
+00891463  //BNE TEST START :    bne x18 x8 0x8      | taken as x18 is not equal to x8,skip the next instruction
+000037B7  //                    addi x18 x8 0xC     | NEVER EXECUTED
+00895463  //BGE TEST START :    bge x18 x8 0x8      | taken  as x18 > x8, skip the next command
+000037B7  //                    addi x18 x8 0xC     | NEVER EXECUTED
+00896463  //BLTU TEST START :   bltu x18 x8 0x8     | False not taken 
+01246463  //               :    bltu x8 x18 0x8     | TRUE, taken, as x8 smaller than x18
+00C90413  //                    addi x8 x18 0xC     | NEVER EXECUTED
+0089F463  //BGEU TEST START :   bgeu x18 x8 0x8     | Taken 
+000037B7  //                    addi x18 x8 0xC     | NEVER EXECUTED
 00000013  //NOP
 00000013  //NOP

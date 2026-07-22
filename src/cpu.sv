@@ -74,6 +74,8 @@ logic [2:0] f3;
 assign f3 = instruction[14:12];
 logic alu_last_bit;
 assign alu_last_bit = last_bit;
+logic alu_unsigned_less;
+assign alu_unsigned_less = unsigned_less;
 
 control control(
     .op(op),
@@ -82,6 +84,7 @@ control control(
     .alu_zero(alu_zero),
     .shamt(shamt),
     .alu_last_bit(alu_last_bit),
+    .alu_unsigned_less(alu_unsigned_less),
 
     //output 
     .alu_control(alu_control),
@@ -166,6 +169,7 @@ end
 logic [4:0] shift_amount;
 
 wire last_bit;
+wire unsigned_less;
 
 always_comb begin
     case(op)
@@ -193,7 +197,8 @@ alu alu_inst (
     .alu_result(alu_result),
     .zero(alu_zero),
     .shamt(shift_amount),
-    .last_bit(last_bit)
+    .last_bit(last_bit),
+    .unsigned_less(unsigned_less)
 
 );
 

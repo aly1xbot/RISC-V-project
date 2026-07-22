@@ -1,7 +1,7 @@
 // memory.sv
 
 module memory #(
-    parameter WORDS = 64,
+    parameter WORDS = 128,
     parameter mem_init = ""
 ) (
     input logic clk,

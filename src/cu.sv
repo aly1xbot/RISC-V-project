@@ -6,6 +6,7 @@ module control(
     input logic alu_zero,
     input logic [4:0] shamt,
     input logic alu_last_bit,
+    input logic alu_unsigned_less,
     
 
     output logic [3:0] alu_control,
@@ -75,7 +76,7 @@ always_comb begin
 
         end
         // j_type jal instruction
-        7'b1101111 : begin
+        7'b1101111, 7'b1100111 : begin
             reg_write = 1'b1;
             imm_source = 3'b011;
             alu_source = 1'b0;
@@ -83,7 +84,8 @@ always_comb begin
             branch = 1'b0;
             jump = 1'b1;
             write_back_source = 2'b10;
-
+            if (op[3]) begin
+                
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
         7'b0010011 : begin
@@ -181,6 +183,10 @@ always_comb begin
                 3'b001 : alu_control = 4'b0001;
                 //BGE
                 3'b101 : alu_control = 4'b0101;
+                //bltu
+                3'b110 : alu_control = 4'b0111;
+                //bgeu
+                3'b111 : alu_control = 4'b0111;
                 default : alu_control = 4'b0000;
             endcase
         end
@@ -201,7 +207,9 @@ always_comb begin : branch_logic_decode
         //BGE
         3'b101 : assert_branch = ~alu_last_bit & branch;
         //bltu
+        3'b110 : assert_branch = alu_unsigned_less & branch;
         //bgeu
+        3'b111 : assert_branch = ~alu_unsigned_less & branch;
         default : assert_branch = 1'b0;
     endcase
 end

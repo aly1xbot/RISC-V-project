@@ -6,7 +6,8 @@ module alu (
 
     output logic [31:0] alu_result,
     output logic zero,
-    output logic last_bit
+    output logic last_bit,
+    output logic unsigned_less
 
 
 );
@@ -46,6 +47,8 @@ end
 
 assign zero = alu_result == 32'b0;
 assign last_bit = alu_result[0];
+assign unsigned_less = ($unsigned(src1) < $unsigned(src2));
+
 
 
 endmodule

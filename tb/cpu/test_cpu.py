@@ -422,6 +422,30 @@ async def cpu_insrt_test(dut):
     assert not binary_to_hex(dut.instruction.value) == "000037B7"
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
 
+    print("\n\nTESTING BGE\n\n")
+
+    assert binary_to_hex(dut.instruction.value) == "00895463"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert not binary_to_hex(dut.instruction.value) == "000037B7"
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+
+    print("\n\nTESTING BLTU\n\n")
+    assert binary_to_hex(dut.instruction.value) == "00896463"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert binary_to_hex(dut.instruction.value) == "01246463"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert not binary_to_hex(dut.instruction.value) == "00C90413"
+    assert binary_to_hex(dut.regfile.registers[8]) == "000037AB"
+
+    print("\n\nTESTING BGEU\n\n")
+    assert binary_to_hex(dut.instruction.value) == "0089F463"
+    await RisingEdge(dut.clk)
+    await Timer(1, unit = "ns")
+    assert not binary_to_hex(dut.instruction.value) == "000037B7"
+    assert binary_to_hex(dut.regfile.registers[19].value) == "6DE0A000"
 
 
 

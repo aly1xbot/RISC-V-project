@@ -217,8 +217,6 @@ async def cpu_insrt_test(dut):
     # 2F2FA2B7  //LUI TEST START :    lui x5 0x2F2FA      | x5 <= 2F2FA000
     ##################
     print("\n\nTESTING LUI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     # Check test's init state
     assert binary_to_hex(dut.instruction.value) == "2F2FA2B7"
 
@@ -232,8 +230,6 @@ async def cpu_insrt_test(dut):
     ##################
 
     print("\n\nTESTING SLTI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[19].value) == "00000AAA"
     assert binary_to_hex(dut.instruction.value) == "FFF9AB93"
     await RisingEdge(dut.clk)
@@ -246,8 +242,6 @@ async def cpu_insrt_test(dut):
     # FFF9BB13  //SLTIU TEST START :  sltiu x22 x19 0xFFF | x22 <= 00000001
     # 0019BB13  //                    sltiu x22 x19 0x001 | x22 <= 00000000
     ##################
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "FFF9BB13"
     await RisingEdge(dut.clk)
     await Timer(1, unit = "ns")
@@ -260,8 +254,6 @@ async def cpu_insrt_test(dut):
 
     #xori test
     print("\n\nTESTING XORI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "AAA94913"
     await RisingEdge(dut.clk)
     await Timer(1, unit = "ns")
@@ -276,8 +268,6 @@ async def cpu_insrt_test(dut):
 
     #andi test
     print("\n\nTESTING ANDI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[19].value) == "21524445" # checking the initial state
     assert binary_to_hex(dut.instruction.value) == "AAA9F913"
     await RisingEdge(dut.clk)
@@ -292,8 +282,6 @@ async def cpu_insrt_test(dut):
 
     #ori test
     print("\n\nTESTING ORI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[18].value) == "21524000"
     assert binary_to_hex(dut.regfile.registers[20].value) == "DEADC999"
     assert binary_to_hex(dut.instruction.value) == "AAAA6913"
@@ -303,8 +291,6 @@ async def cpu_insrt_test(dut):
 
     # slli test
     print("\n\nTESTING SLLI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[26].value) == "DEADC09A"
     assert binary_to_hex(dut.instruction.value) == "00AD1993"
     await RisingEdge(dut.clk)
@@ -313,8 +299,6 @@ async def cpu_insrt_test(dut):
 
     #srli test
     print("\n\nTESTING SRLI\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "00AD5993"
     assert binary_to_hex(dut.regfile.registers[26].value) == "DEADC09A"
     await RisingEdge(dut.clk)
@@ -326,12 +310,10 @@ async def cpu_insrt_test(dut):
     #srai test
     print("\n\nSRAI TEST\n\n")
 
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "409CD913"
 
     assert binary_to_hex(dut.regfile.registers[25].value) == "7F4FD38B"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[18].value) == "003FA7E9"
 
 
@@ -339,27 +321,20 @@ async def cpu_insrt_test(dut):
     # 412A8933  //SUB TEST START :    sub x18 x21 x18     | x18 <= FFFFF8FF
     ##################
     print("\n\nTESTING SUB\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "412A8933"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[18].value) == "DE6DE0A0"
 
 
 
 
     print("\n\nTESTING SLL\n\n")
-    await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "00800393"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "00791933" 
     assert binary_to_hex(dut.regfile.registers[18].value) == "DE6DE0A0"
     assert binary_to_hex(dut.regfile.registers[7].value) == "00000008"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
 
 
@@ -368,14 +343,12 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[23].value) == "00000001"
     assert binary_to_hex(dut.regfile.registers[22].value) == "00000000"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[17].value) == "00000001"
 
     print("\n\n Testing SLTU\n\n")
     assert binary_to_hex(dut.instruction.value) == "013B38B3"
     assert binary_to_hex(dut.regfile.registers[23]) == "00000001"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[17]) == "00000001"
 
     print("\n\n Testing XOR")
@@ -383,20 +356,17 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
     assert binary_to_hex(dut.regfile.registers[19].value) == "0037AB70"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[17].value) == "6DD70B70"
 
     print("\n\n TESTING SRL\n\n")
     assert binary_to_hex(dut.instruction.value) == "0079D433"
     assert binary_to_hex(dut.regfile.registers[7]) == "00000008"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
 
     print("\n\n TESTING SRA\n\n")
     assert binary_to_hex(dut.instruction.value) == "4079D433"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
 
 
@@ -405,10 +375,8 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
     assert binary_to_hex(dut.regfile.registers[17].value) == "6DD70B70"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "01144463"
     await RisingEdge(dut.clk) # blt x8 x17 0x8
-    await Timer(1, unit = "ns")
     assert not binary_to_hex(dut.instruction.value) == "00C00413"
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
 
@@ -418,7 +386,6 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert not binary_to_hex(dut.instruction.value) == "000037B7"
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
 
@@ -426,26 +393,36 @@ async def cpu_insrt_test(dut):
 
     assert binary_to_hex(dut.instruction.value) == "00895463"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert not binary_to_hex(dut.instruction.value) == "000037B7"
     assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
 
     print("\n\nTESTING BLTU\n\n")
     assert binary_to_hex(dut.instruction.value) == "00896463"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert binary_to_hex(dut.instruction.value) == "01246463"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert not binary_to_hex(dut.instruction.value) == "00C90413"
     assert binary_to_hex(dut.regfile.registers[8]) == "000037AB"
 
     print("\n\nTESTING BGEU\n\n")
     assert binary_to_hex(dut.instruction.value) == "0089F463"
     await RisingEdge(dut.clk)
-    await Timer(1, unit = "ns")
     assert not binary_to_hex(dut.instruction.value) == "000037B7"
-    assert binary_to_hex(dut.regfile.registers[19].value) == "6DE0A000"
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+
+    print("\n\n TESTING JALR\n\n") 
+    assert binary_to_hex(dut.instruction.value) == "00000397"
+    assert binary_to_hex(dut.pc.value) == "000000EC"
+
+    await RisingEdge(dut.clk) # auipc x7 0x00 
+    await RisingEdge(dut.clk) # addi x7 x7 0x10 
+    assert binary_to_hex(dut.regfile.registers[7].value) == "00000100"
+
+    await RisingEdge(dut.clk) # jalr x1  -4(x7)
+    assert binary_to_hex(dut.regfile.registers[1].value) == "000000F8"
+    assert not binary_to_hex(dut.instruction.value) == "00C00413"
+    assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
+    assert binary_to_hex(dut.pc.value) == "000000FC" 
 
 
 

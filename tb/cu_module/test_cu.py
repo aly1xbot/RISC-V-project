@@ -166,7 +166,7 @@ async def auipc_control_test(dut):
     assert dut.reg_write.value == "1"
     assert dut.write_back_source.value == "11"
     assert dut.branch.value == "0"
-    assert dut.second_add_source.value == "0"
+    assert dut.second_add_source.value == "00"
     assert dut.jump.value == "0"
 
 @cocotb.test()
@@ -319,14 +319,14 @@ async def blt_control_test(dut):
     assert dut.alu_source.value == "0"
     assert dut.branch.value == "1"
     assert dut.pc_source.value == "0"
-    assert dut.second_add_source.value == "0"
+    assert dut.second_add_source.value == "00"
 
     # Test if branching condition is met
     await Timer(3, units="ns")
     dut.alu_last_bit.value = 0b1
     await Timer(1, units="ns")
     assert dut.pc_source.value == "1"
-    assert dut.second_add_source.value == "0"
+    assert dut.second_add_source.value == "00"
 
 
 
@@ -402,4 +402,21 @@ async def bgeu_control_test(dut):
     await Timer(1, unit = "ns")
     assert dut.assert_branch.value == "0"
     assert dut.pc_source.value == "0"
+
+
+@cocotb.test()
+async def jalr_control_test(dut):
+    await set_unknown(dut)
+    await Timer(10, unit = "ns")
+    dut.op.value = 0b1100111
+    await Timer(1, unit = "ns")
+
+    assert dut.imm_source.value == "000"
+    assert dut.mem_write.value == "0"
+    assert dut.reg_write.value == "1"
+    assert dut.branch.value == "0"
+    assert dut.jump.value == "1"
+    assert dut.pc_source.value == "1"
+    assert dut.write_back_source.value == "10"
+    assert dut.second_add_source.value == "10"
 

@@ -13,7 +13,7 @@ wire [31:0] immediate;   // moved before use in second_add_select
 
 // control signals (moved before pc_select and second_add_select)
 wire pc_source;
-wire second_add_source;
+wire [1:0] second_add_source;
 wire alu_zero;
 wire [3:0] alu_control;
 wire [2:0] imm_source;
@@ -33,8 +33,10 @@ end
 
 always_comb begin : second_add_select
     case(second_add_source)
-        1'b0 : pc_plus_second_add = pc + immediate; //auipc
-        1'b1 : pc_plus_second_add = immediate; //lui
+        2'b00 : pc_plus_second_add = pc + immediate; // width updated !
+        2'b01 : pc_plus_second_add = immediate; // width updated !
+        2'b10 : pc_plus_second_add = (read_reg1 + immediate) & 32'hFFFFFFFE; // NEW
+        default : pc_plus_second_add = 32'b0;
     endcase
 end
 
@@ -202,6 +204,14 @@ alu alu_inst (
 
 );
 
+wire [3:0] mem_byte_enable;
+
+load_store_decoder ls_decoder(
+    .alu_result_address(alu_result),
+    .byte_enable(mem_byte_enable)
+
+);
+
 
 
 // data memory 
@@ -214,10 +224,30 @@ memory #(
     .address(alu_result),
     .write_data(read_reg2),
     .write_enable(mem_write),
+    .byte_enable(mem_byte_enable),
     .rst_n(1'b1),
 
     // Memory outputs
     .read_data(mem_read)
 );
 
+
+always @(posedge clk)
+begin
+    $display(
+    "pc=%h next=%h source=%b second=%b imm=%h rs1=%h",
+    pc,
+    pc_next,
+    pc_source,
+    second_add_source,
+    immediate,
+    read_reg1
+    );
+end
+
+
+
+
+
 endmodule
+

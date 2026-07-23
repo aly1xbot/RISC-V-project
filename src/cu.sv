@@ -16,7 +16,7 @@ module control(
     output logic alu_source,
     output logic [1:0] write_back_source,
     output logic pc_source,
-    output logic second_add_source
+    output logic [1:0]second_add_source
 );
 
 //main decoder
@@ -33,7 +33,7 @@ always_comb begin
     write_back_source = 2'b00;
     branch = 1'b0;
     jump = 1'b0;
-    second_add_source = 1'b0; 
+    second_add_source = 2'b00; 
     // lw command and sw command 
     case(op)
         // and command
@@ -84,8 +84,14 @@ always_comb begin
             branch = 1'b0;
             jump = 1'b1;
             write_back_source = 2'b10;
-            if (op[3]) begin
-                
+            if(op[3]) begin// jal
+                second_add_source = 2'b00;
+                imm_source = 3'b011;
+            end         
+            else if (~op[3]) begin // jalr
+                second_add_source = 2'b10;
+                imm_source = 3'b000;
+            end   
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
         7'b0010011 : begin
@@ -106,7 +112,7 @@ always_comb begin
             write_back_source = 2'b11;
             branch = 1'b0;
             jump = 1'b0;
-            second_add_source = 1'b1;
+            second_add_source = 2'b01;
         end
         7'b0010111: begin  // AUIPC
             imm_source = 3'b100;
@@ -115,7 +121,7 @@ always_comb begin
             write_back_source = 2'b11;
             branch = 1'b0;
             jump = 1'b0;
-            second_add_source = 1'b0;
+            second_add_source = 2'b00;
         end
 
         

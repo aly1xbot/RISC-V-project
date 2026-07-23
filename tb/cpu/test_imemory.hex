@@ -24,31 +24,20 @@ FFDFF0EF  //                    jal x1 0x-4         | #2 jump @PC-0x4
 1AB38D13  //ADDI TEST START :   addi x26 x7 0x1AB   | x26 <= DEADC09A
 F2130C93  //                    addi x25 x6 0xF21   | x25 <= 7F4FD38B
 1F1FA297  //AUIPC TEST START :  auipc x5 0x1F1FA    | x5 <= 1F1FA064   PC 0x64
-00000013  //                    nop                 | NEVER EXECUTED
 2F2FA2B7  //LUI TEST START :    lui x5 0x2F2FA      | x5 <= 2F2FA000
-00000013  //                    nop                 | NEVER EXECUTED
 FFF9AB93  //SLTI TEST START :   slti x23 x19 0xFFF  | x23 <= 00000000
 001BAB93  //                    slti x23 x23 0x001  | x23 <= 00000001
-00000013  //                    nop                 | NEVER EXECUTED
 FFF9BB13  //SLTIU TEST START :  sltiu x22 x19 0xFFF | x22 <= 00000001
 0019BB13  //                    sltiu x22 x19 0x001 | x22 <= 00000000
-00000013  //                    nop                 | NEVER EXECUTED
 AAA94913  //XORI TEST START :   xori x18 x19 0xAAA  | x18 <= 21524445 (because sign extend)
 00094993  //                    xori x19 x18 0x000  | x19 <= 21524445
-00000013  //                    nop                 | NEVER EXECUTED
 AAA9F913  //ANDI TEST START :   andi x18 x19 0xAAA  | x18 <= 21524000
 00097993  //                    andi x19 x18 0x000  | x19 <= 00000000
-00000013  //                    nop                 | NEVER EXECUTED
 AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
-00000013  //                    nop                 | NEVER EXECUTED
 00AD1993  //SLLI TEST START :   slli x19 x26 0x00A  | x19 <= B7026800
-00000013  //                    nop                 | NEVER EXECUTED
 00AD5993  //SRLI TEST START :   srli x19 x26 0x00A  | x19 <= 0037AB70
-00000013  //                    nop                 | NEVER EXECUTED
-409CD913  //SARI TEST START :   srai x18 x25 0x9    | x18 <= 003FA7E9
-00000013  //                    nop                 | NEVER EXECUTED
+409CD913  //SRAI TEST START :   srai x18 x25 0x9    | x18 <= 003FA7E9
 412A8933  //SUB TEST START :    sub x18 x21 x18     | x18 <= DE6DE0A0
-00000013  //                    nop                 | NEVER EXECUTED
 00800393  //SLL TEST START :    addi x7 x0 0x8      | x7  <= 00000008
 00791933  //                    sll x18 x18 x7      | x18 <= 6DE0A000
 013B28B3  //SLT TEST START :    slt x17 x22 x23     | x17 <= 00000001
@@ -68,5 +57,7 @@ AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
 00C90413  //                    addi x8 x18 0xC     | NEVER EXECUTED
 0089F463  //BGEU TEST START :   bgeu x18 x8 0x8     | Taken 
 000037B7  //                    addi x18 x8 0xC     | NEVER EXECUTED
-00000013  //NOP
-00000013  //NOP
+00000397  //JALR TEST START :   auipc x7 0x0        | x7 <= 00000011                PC = 0xEC
+01438393  //                    addi x7 x7 0x14     | x7 <= 00000100                PC = 0xF0
+FFC380E7  //                    jalr x1  -4(x7)     | x1 <= 000000F8, go @PC 0xFC  PC = 0xF4
+00C00413  //                    addi x8 x0 0xC      | NEVER EXECUTED (check value)  PC = 0xF8

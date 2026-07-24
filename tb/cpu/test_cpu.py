@@ -422,7 +422,16 @@ async def cpu_insrt_test(dut):
     assert binary_to_hex(dut.regfile.registers[1].value) == "000000F8"
     assert not binary_to_hex(dut.instruction.value) == "00C00413"
     assert binary_to_hex(dut.regfile.registers[8].value) == "000037AB"
-    assert binary_to_hex(dut.pc.value) == "000000FC" 
+    assert binary_to_hex(dut.pc.value) == "000000FC"
+
+    print("\n\nTESTING SB\n\n")
+    assert binary_to_hex(dut.instruction.value) == "008020A3"
+    await RisingEdge(dut.clk)
+    assert binary_to_hex(dut.data_memory.mem[1].value) == "000000F8"
+    await RisingEdge(dut.clk)
+    assert binary_to_hex(dut.regfile.registers[1].value) == "00EE0000"
+
+
 
 
 

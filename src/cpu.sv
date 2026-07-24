@@ -204,25 +204,34 @@ alu alu_inst (
 
 );
 
+//load-store decoder
+
 wire [3:0] mem_byte_enable;
+wire [31:0] data;
 
 load_store_decoder ls_decoder(
     .alu_result_address(alu_result),
-    .byte_enable(mem_byte_enable)
+    .byte_enable(mem_byte_enable),
+    .f3(f3),
+    .reg_read(read_reg2),
+    .data(mem_write_data)
 
 );
 
 
 
+
+
 // data memory 
+
 
 memory #(
     .mem_init ("./test_dmemory.hex")
 ) data_memory(
  // Memory inputs
     .clk(clk),
-    .address(alu_result),
-    .write_data(read_reg2),
+    .address({alu_result[31:2],2'b00}),
+    .write_data(mem_write_data),
     .write_enable(mem_write),
     .byte_enable(mem_byte_enable),
     .rst_n(1'b1),
@@ -244,6 +253,10 @@ begin
     read_reg1
     );
 end
+
+
+
+
 
 
 

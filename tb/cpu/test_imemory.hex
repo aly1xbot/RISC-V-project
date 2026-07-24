@@ -61,3 +61,5 @@ AAAA6913  //ORI TEST START  :   ori  x18 x20 0xAAA  | x18 <= FFFFFBBB
 01438393  //                    addi x7 x7 0x14     | x7 <= 00000100                PC = 0xF0
 FFC380E7  //                    jalr x1  -4(x7)     | x1 <= 000000F8, go @PC 0xFC  PC = 0xF4
 00C00413  //                    addi x8 x0 0xC      | NEVER EXECUTED (check value)  PC = 0xF8
+008020A3  //SB TEST START :     sw x8 0x1(x0)       | NO WRITE ! (mis-aligned !)    PC = 0x11C
+00800323  //                    sb x8 0x6(x0)       | mem @ 0x4 <= 00EE0000         PC = 0x120

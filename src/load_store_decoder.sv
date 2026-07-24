@@ -39,6 +39,20 @@ always_comb begin
             data = reg_read;
         end
 
+        3'b001: begin //SH
+            case (offset)
+                2'b00 : begin
+                    byte_enable = 4'b0011;
+                    data = (reg_read & 32'h0000FFFF);
+                end
+                2'b10 : begin
+                    byte_enable = 4'b1100;
+                    data = (reg_read & 32'h0000FFFF) << 16;
+                end
+                default: byte_enable = 4'b0000;
+            endcase
+        end
+
         default: begin
             byte_enable = 4'b0000; // No operation for unsupported types
         end

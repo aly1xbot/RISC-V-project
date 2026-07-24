@@ -7,7 +7,7 @@ module memory #(
     input logic clk,
     input logic [31:0] address,
     input logic [31:0] write_data,
-    input logic [31:0] byte_enable,
+    input logic [3:0] byte_enable,
     input logic write_enable,
     input logic rst_n,
 

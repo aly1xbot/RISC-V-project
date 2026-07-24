@@ -12,6 +12,7 @@ VERILOG_SOURCES += $(SRC_DIR)/cu.sv          # 注意：你的实例化是 contr
 VERILOG_SOURCES += $(SRC_DIR)/regfile.sv
 VERILOG_SOURCES += $(SRC_DIR)/signext.sv
 VERILOG_SOURCES += $(SRC_DIR)/alu.sv
+VERILOG_SOURCES += $(SRC_DIR)/load_store_decoder.sv
 
 
 

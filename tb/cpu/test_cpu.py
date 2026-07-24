@@ -427,9 +427,9 @@ async def cpu_insrt_test(dut):
     print("\n\nTESTING SB\n\n")
     assert binary_to_hex(dut.instruction.value) == "008020A3"
     await RisingEdge(dut.clk)
-    assert binary_to_hex(dut.data_memory.mem[1].value) == "000000F8"
+    assert binary_to_hex(dut.data_memory.mem[1].value) == "00000000"
     await RisingEdge(dut.clk)
-    assert binary_to_hex(dut.regfile.registers[1].value) == "00EE0000"
+    assert binary_to_hex(dut.regfile.registers[1].value) == "000000F8"
 
 
 

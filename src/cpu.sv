@@ -63,6 +63,7 @@ memory #(
     .write_data(32'b0),
     .write_enable(1'b0),
     .rst_n(1'b1),
+    .byte_enable(4'b0000),
     // Memory Outputs
     .read_data(instruction)
 );
@@ -209,6 +210,7 @@ alu alu_inst (
 wire [3:0] mem_byte_enable;
 wire [31:0] data;
 
+
 load_store_decoder ls_decoder(
     .alu_result_address(alu_result),
     .byte_enable(mem_byte_enable),
@@ -223,6 +225,7 @@ load_store_decoder ls_decoder(
 
 
 // data memory 
+logic [31:0] mem_write_data;
 
 
 memory #(

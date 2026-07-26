@@ -141,62 +141,44 @@ end
 
 always_comb begin 
     case(alu_op)
-        //lw, sw
-        2'b00 : alu_control = 4'b0000;
-        2'b10 : begin
+        // LW, SW
+        ALU_OP_LOAD_STORE : alu_control = ALU_ADD;
+        // R-Types, I-types
+        ALU_OP_MATH : begin
             case (func3)
-                // ADD
-                3'b000 : begin
+                // ADD (and later SUB with a different F7)
+                F3_ADD_SUB : begin
+                    // 2 scenarios here :
+                    // - R-TYPE : either add or sub and we need to a check for that
+                    // - I-Type : aadi -> we use add arithmetic
                     if(op == 7'b0110011) begin // R-type
-                        alu_control = func7[5] ? 4'b0001 : 4'b0000;
+                        alu_control = (func7 == F7_SUB)? ALU_SUB : ALU_ADD;
                     end else begin // I-Type
-                        alu_control = 4'b0000;
+                        alu_control = ALU_ADD;
                     end
                 end
-                3'b111 : alu_control = 4'b0010; // andi
-                3'b110 : alu_control = 4'b0011; // ori
-                // SLTI
-                3'b010 : alu_control = 4'b0101; // NEW !
-                // SLTIU and SLTU
-                3'b011 : alu_control = 4'b0111;
-                // XORI
-                3'b100 : alu_control = 4'b1000;
-                // slli
-                3'b001 : begin
-                    case(func7)
-                        7'b0000000 : alu_control = 4'b0100;
-                        default : alu_control = 4'b0000;
-                    endcase
-                end
-                //srli
-                3'b101 : begin
-                    case(func7)
-                    7'b0000000 : alu_control = 4'b0110; // srli
-                    7'b0100000 : alu_control = 4'b1001; // srai instruction
-                    default : alu_control = 4'b0000;
-                    endcase
+                // AND
+                F3_AND : alu_control = ALU_AND;
+                // OR
+                F3_OR : alu_control = ALU_OR;
+                // SLT, SLTI
+                F3_SLT: alu_control = ALU_SLT;
+                // SLTU, SLTIU
+                F3_SLTU : alu_control = ALU_SLTU;
+                // XOR
+                F3_XOR : alu_control = ALU_XOR;
+                // SLL
+                F3_SLL : alu_control = ALU_SLL;
+                // SRL, SRA
+                F3_SRL_SRA : begin
+                    if(func7 == F7_SLL_SRL) begin
+                        alu_control = ALU_SRL; // srl
+                    end else if (func7 == F7_SRA) begin
+                        alu_control = ALU_SRA; // sra
+                    end
                 end
             endcase
         end
-        // B-type decoder
-        2'b01 : begin
-            case (func3)
-                //BEQ
-                3'b000 : alu_control = 4'b0001;
-                //BLT
-                3'b100 : alu_control = 4'b0101;
-                //BNE
-                3'b001 : alu_control = 4'b0001;
-                //BGE
-                3'b101 : alu_control = 4'b0101;
-                //bltu
-                3'b110 : alu_control = 4'b0111;
-                //bgeu
-                3'b111 : alu_control = 4'b0111;
-                default : alu_control = 4'b0000;
-            endcase
-        end
-        default : alu_control = 4'b0000;
     endcase
 end
 

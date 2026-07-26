@@ -431,6 +431,47 @@ async def cpu_insrt_test(dut):
     await RisingEdge(dut.clk)
     assert binary_to_hex(dut.regfile.registers[1].value) == "000000F8"
 
+    print("\n\nTESTING SH\n\n")
+    print(f"x8 value is :{dut.regfile.registers[8].value}")
+    print(f"value of x1 is :{dut.regfile.registers[1].value}")
+    assert binary_to_hex(dut.instruction.value) == "008010A3"
+    await RisingEdge(dut.clk)
+    assert binary_to_hex(dut.data_memory.mem[1].value) == "00AB0000" 
+    await RisingEdge(dut.clk)
+    assert binary_to_hex(dut.data_memory.mem[1].value) == "00AB0000" 
+    assert binary_to_hex(dut.instruction.value) == "00801323"
+    await RisingEdge(dut.clk)
+    assert binary_to_hex(dut.data_memory.mem[1].value) == "37AB0000"
+
+    print("\n\nTESTING LB\n\n")
+
+    # Check test's init state
+    assert binary_to_hex(dut.instruction.value) == "01000393"
+
+    await RisingEdge(dut.clk) # addi x7 x0 0x10 
+    assert binary_to_hex(dut.regfile.registers[7].value) == "00000010"
+
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+    await RisingEdge(dut.clk) # lw x18 -1(x7)
+    assert binary_to_hex(dut.regfile.registers[18].value) == "6DE0A000"
+
+    await RisingEdge(dut.clk) # lb x18 -1(x7) 
+    assert binary_to_hex(dut.regfile.registers[18].value) == "FFFFFFDE"
+
+    await RisingEdge(dut.clk) # lbu x19 -3(x7)
+    assert binary_to_hex(dut.regfile.registers[19].value) == "000000BE"
+
+    await RisingEdge(dut.clk) # lh x20 -3(x7) 
+    assert binary_to_hex(dut.regfile.registers[20].value) == "DEADC999"
+
+    await RisingEdge(dut.clk) # lh x20 -6(x7)
+    assert binary_to_hex(dut.regfile.registers[20].value) == "FFFFDEAD"
+
+    await RisingEdge(dut.clk) # lhu x21 -3(x7) 
+    assert binary_to_hex(dut.regfile.registers[21].value) == "DEAD8889"
+
+    await RisingEdge(dut.clk) # lhu x21 -6(x7)
+    assert binary_to_hex(dut.regfile.registers[21].value) == "0000DEAD"
 
 
 

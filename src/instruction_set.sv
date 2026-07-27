@@ -1,7 +1,20 @@
 // holy_core_pkg.sv
 `timescale 1ns/1ps
 
-package instruction_set_pkg;
+package instruction_set_pkg:
+
+typedef enum logic[2:0] {
+    IDLE,
+    SENDING_WRITE_REQ,
+    SENDING_WRITE_DATA,
+    WAITING_WRITE_RES,
+    SENDING_READ_REQ,
+    RECEIVING_READ_DATA,
+}   cache_state_t;
+  
+  
+  
+  
   // INSTRUCTION OP CODES
 typedef enum logic [6:0] {
     OPCODE_R_TYPE         = 7'b0110011,

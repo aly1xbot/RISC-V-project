@@ -14,6 +14,7 @@ VERILOG_SOURCES += $(SRC_DIR)/signext.sv
 VERILOG_SOURCES += $(SRC_DIR)/alu.sv
 VERILOG_SOURCES += $(SRC_DIR)/load_store_decoder.sv
 VERILOG_SOURCES += $(SRC_DIR)/reader.sv
+VERILOG_SOURCES += $(SRC_DIR)/cache.sv
 
 
 

@@ -15,7 +15,7 @@ async def reset(dut):
 
     for address in range(dut.WORDS.value):
         dut.address.value = address
-        await Timer(1, unit = "ns")
+        await Timer(1, units = "ns")
         assert dut.read_data.value == "00000000000000000000000000000000"
 
 

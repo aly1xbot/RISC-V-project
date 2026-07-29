@@ -3,7 +3,7 @@ from cocotb.triggers import Timer
 import random
 
 @cocotb.test()
-async def ls_unit_test(dut):
+async def ls_units_test(dut):
     word = 0x123ABC00
 
     #sw
@@ -15,7 +15,7 @@ async def ls_unit_test(dut):
         dut.reg_read.value = red_data
         for offset in range(4):
             dut.alu_result_address.value = word | offset
-            await Timer(1, unit = "ns")
+            await Timer(1, units = "ns")
             assert dut.data.value == red_data & 0xFFFFFFFF
             if offset == 0b00:
                 assert dut.byte_enable.value == 0b1111
@@ -26,7 +26,7 @@ async def ls_unit_test(dut):
 
     #sb
 
-    await Timer(10, unit = "ns")
+    await Timer(10, units = "ns")
     dut.f3.value = 0b000
 
     for _ in range(100):
@@ -34,7 +34,7 @@ async def ls_unit_test(dut):
         dut.reg_read.value = reg_data
         for offset in range(4):
             dut.alu_result_address.value = word | offset
-            await Timer(1, unit = "ns")
+            await Timer(1, units = "ns")
             if offset == 0b00:
                 assert dut.byte_enable.value == 0b0001
                 assert dut.data.value == (reg_data & 0x000000FF)
@@ -52,9 +52,9 @@ async def ls_unit_test(dut):
 
     #SH
 
-    await Timer(1, unit = "ns")
+    await Timer(1, units = "ns")
     dut.f3.value = 0b001
-    await Timer(1, unit = "ns")
+    await Timer(1, units = "ns")
     for _ in range(100):
         reg_data = random.randint(0,0xFFFFFFFF)
         dut.reg_read.value = reg_data

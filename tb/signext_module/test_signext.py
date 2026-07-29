@@ -14,10 +14,10 @@ async def random_write_read_test(dut):
     # masked to leave room for imm "test payload"
     random_junk = 0b000000000000_1010101010101 
     raw_data = random_junk | imm
-    await Timer(1, units="ns")
+    await Timer(1, unitss="ns")
     dut.raw_src.value = raw_data
     dut.imm_source.value = source
-    await Timer(1, units="ns") # let it propagate ...
+    await Timer(1, unitss="ns") # let it propagate ...
     assert dut.immediate.value == "00000000000000000000000001111011"
     assert int(dut.immediate.value) == 123
 
@@ -29,10 +29,10 @@ async def random_write_read_test(dut):
     # masked to leave room for imm "test payload"
     random_junk = 0b000000000000_1010101010101 
     raw_data = random_junk | imm
-    await Timer(1, units="ns")
+    await Timer(1, unitss="ns")
     dut.raw_src.value = raw_data
     dut.imm_source.value = source
-    await Timer(1, units="ns") # let it propagate ...
+    await Timer(1, unitss="ns") # let it propagate ...
     assert dut.immediate.value == "11111111111111111111111111010110"
     # Python interprets int as uint. we sub 1<<32 as int to get corresponding negative value
     assert int(dut.immediate.value) - (1 << 32)  == -42
@@ -44,7 +44,7 @@ async def random_write_read_test(dut):
 async def singext_s_type_test(dut):
     for _ in range(100):
         # test for the positive IMM 
-        await Timer(100, unit = "ns")
+        await Timer(100, units = "ns")
         imm = random.randint(0,0b01111111111) 
         imm_11_5 = imm >>5
         imm_4_0 = imm & 0b000000011111
@@ -52,7 +52,7 @@ async def singext_s_type_test(dut):
         source = 0b001
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, unit = "ns")
+        await Timer(1, units = "ns")
         assert int(dut.immediate.value) == imm
 
     # testing for the negative IMM value 
@@ -64,14 +64,14 @@ async def singext_s_type_test(dut):
         source = 0b001
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer (1, unit = "ns")
+        await Timer (1, units = "ns")
         assert int(dut.immediate.value) - (1 << 32) == imm
 
 
 @cocotb.test()
 async def signext_b_type_test(dut):
     for _ in range(100):
-        await Timer(100, unit = "ns")
+        await Timer(100, units = "ns")
         imm = random.randint(0, 0b011111111111)
         imm <<= 1
         imm_12 = (imm & 0b1000000000000) >> 12 # 0 (positive)
@@ -80,13 +80,13 @@ async def signext_b_type_test(dut):
         imm_4_1 = (imm & 0b0000000011110) >> 1
         raw_data = (imm_12 << 24) | (imm_11 << 0) | (imm_10_5 << 18) | (imm_4_1 << 1)
         source = 0b010
-        await Timer(1, units="ns")
+        await Timer(1, unitss="ns")
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, units="ns") # let it propagate ...
+        await Timer(1, unitss="ns") # let it propagate ...
         assert int(dut.immediate.value) == imm 
 
-        await Timer(100, units="ns")
+        await Timer(100, unitss="ns")
         imm = random.randint(0b100000000000,0b111111111111)
         imm <<= 1 # 13 bits signed imm ending with a 0
         imm_12 = (imm & 0b1000000000000) >> 12 # 1 (negative)
@@ -95,10 +95,10 @@ async def signext_b_type_test(dut):
         imm_4_1 = (imm & 0b0000000011110) >> 1
         raw_data = (imm_12 << 24) | (imm_11 << 0) | (imm_10_5 << 18) | (imm_4_1 << 1)
         source = 0b010
-        await Timer(1, units="ns")
+        await Timer(1, unitss="ns")
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, units="ns") # let it propagate ...
+        await Timer(1, unitss="ns") # let it propagate ...
         assert int(dut.immediate.value) - (1 << 32) == imm - (1 << 13)
 
 
@@ -106,7 +106,7 @@ async def signext_b_type_test(dut):
 async def j_type_test(dut):
     for _ in range(100):
         #testing for the positive value 
-        await Timer(100, unit = "ns")
+        await Timer(100, units = "ns")
         imm = random.randint(0,0b01111111111111111111) 
         imm <<= 1 # 21 bits signed imm ending with a 0
         imm_20 =     (imm & 0b100000000000000000000) >> 20
@@ -115,14 +115,14 @@ async def j_type_test(dut):
         imm_10_1 =   (imm & 0b000000000011111111110) >> 1
         raw_data =  (imm_20 << 24) | (imm_19_12 << 5) | (imm_11 << 13) | (imm_10_1 << 14)
         source = 0b011
-        await Timer(1, units="ns")
+        await Timer(1, unitss="ns")
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, units="ns") # let it propagate ...
+        await Timer(1, unitss="ns") # let it propagate ...
         assert int(dut.immediate.value) == imm
 
         # testing for the negative value
-        await Timer(100, unit = "ns")
+        await Timer(100, units = "ns")
         imm = random.randint(0b10000000000000000000,0b11111111111111111111)
         imm <<=1
         imm_20 = (imm & 0b100000000000000000000) >> 20
@@ -131,26 +131,26 @@ async def j_type_test(dut):
         imm_10_1 = (imm & 0b000000000011111111110) >> 1
         raw_data = (imm_20 << 24) | (imm_19_12 << 5) | (imm_11 << 13) | (imm_10_1 << 14)
         source = 0b011
-        await Timer(1, unit = "ns")
+        await Timer(1, units = "ns")
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, unit = "ns")
+        await Timer(1, units = "ns")
         assert int(dut.immediate.value) - (1<<32) == imm - (1<<21)
 
 
 @cocotb.test()
 async def u_type_test (dut):
     for _ in range(100):
-        await Timer(100, unit = "ns")
+        await Timer(100, units = "ns")
         imm_31_12 = random.randint (0,0b11111111111111111111)
         raw_data = (imm_31_12 << 5)
         random_junk = random.randint(0,0b11111)
         raw_data |= random_junk
         source = 0b100
-        await Timer(1, unit = "ns")
+        await Timer(1, units = "ns")
         dut.raw_src.value = raw_data
         dut.imm_source.value = source
-        await Timer(1, unit ="ns")
+        await Timer(1, units ="ns")
         assert int(dut.immediate.value) == imm_31_12 << 12
 
 

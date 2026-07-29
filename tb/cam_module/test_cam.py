@@ -22,7 +22,7 @@ def hex_to_bin(hex_str):
 
 @cocotb.test()
 async def cam_test(dut):
-    clock = Clock(dut.clk, 10, unit="ns")
+    clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start()) 
 
 
@@ -37,7 +37,7 @@ async def cam_test(dut):
 
 
     dut.write_enable.value = 1
-    await Timer(1, unit = "ns") #stroing the value into cam
+    await Timer(1, units = "ns") #stroing the value into cam
     dut.write_index.value = 0
     dut.write_data.value = 0xDE6DE0A0 
     await RisingEdge(dut.clk)
@@ -57,13 +57,13 @@ async def cam_test(dut):
     
     #fiding match value
     dut.search_data.value =  0xDEADBEEF #0xDEADBEEF
-    await Timer(1, unit = "ns")
+    await Timer(1, units = "ns")
     assert dut.match.value == "1"
     assert dut.match_index.value == "10"
 
-    await Timer(1, unit = "ns") #testing for missing value
+    await Timer(1, units = "ns") #testing for missing value
     dut.search_data.value = 0xDEADC09A #0xDEADC09A
-    await Timer(1, unit = "ns")
+    await Timer(1, units = "ns")
     assert dut.match.value == "0"
     assert dut.match_index.value == "00"
 

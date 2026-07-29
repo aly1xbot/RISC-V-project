@@ -1,7 +1,7 @@
 interface axi_if#(
-    parameter ADDR_WITH = 32,
+    parameter ADDR_WIDTH = 32,
     parameter DATA_WIDTH = 32,
-    parameter ID_WIDTH = 32
+    parameter ID_WIDTH = 4
 
 );
 
@@ -10,7 +10,7 @@ logic aclk;
 logic aresetn;
 
 logic [ID_WIDTH-1:0] awid;
-logic [ADDR_WIDTH-1:0] asddr;
+logic [ADDR_WIDTH-1:0] awaddr;
 logic [7:0] awlen; //burst length
 logic [2:0] awsize; //burst size
 logic [1:0] awburst;
@@ -20,9 +20,9 @@ logic awvalid;
 logic awready;
 
 //write data channel
-logic [ID_WIDTH-1:0] arid;
 logic [(DATA_WIDTH/8)-1:0] wstrb;  // Write strobe
 logic wlast;
+logic [DATA_WIDTH-1:0] wdata;
 logic wvalid;
 logic wready;
 

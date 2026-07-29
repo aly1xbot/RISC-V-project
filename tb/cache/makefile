@@ -5,13 +5,23 @@ SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --trace --trace-structs
 WAVES = 1
+SRC := /Users/luokai/Documents/GitHub/RISC-V-project/src
 
-VERILOG_SOURCES += /Users/luokai/Documents/GitHub/RISC-V-project/src/cache.sv
+
+
+VERILOG_SOURCES += /$(SRC)/instruction_set.sv \
+					$(SRC)/axi_if.sv \
+					$(SRC)/cache.sv \
+					$(SRC)/tb_cache.sv
+					
+					
+
+					
 
 # use VHDL_SOURCES for VHDL files
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
-TOPLEVEL = cache
+TOPLEVEL = tb_cache
 
 # MODULE is the basename of the Python test file
 MODULE = test_cache

@@ -18,6 +18,8 @@ module cache #(
 
     axi_if.master axi
 );
+
+
     // | DIRTY | VALID | BLOCK TAG | INDEX/SET | OFFSET | DATA |
     // | FLAGS         | ADDRESS INFOS                  | DATA |
     // cache data struction formation
@@ -57,9 +59,13 @@ module cache #(
         if (~rst_n) begin
             state <=IDLE;
             set_ptr <= 7'd0;
+            cache_valid <= 0;
+            cache_dirty <= 0;
         end else begin
             state <= next_state;
             set_ptr <= next_set_ptr;
+            cache_valid <= next_cache_valid;
+            cache_dirty <= next_cache_dirty;
         end
     end
     // Async Read logic & AXI SIGNALS declaration !
@@ -70,7 +76,6 @@ module cache #(
         axi.wlast = 1'b0;
 
         axi.wdata = cache_data[set_ptr];
-        cache_state = state;
         next_set_ptr = set_ptr;
 
         case (state)
@@ -99,7 +104,7 @@ module cache #(
 
             SENDING_WRITE_REQ: begin
                 axi.awaddr = {cache_block_tag,7'b0000000,2'b00};
-                if (axi.awready) next_state = SENDING_WRTIE_DATA;
+                if (axi.awready) next_state = SENDING_WRITE_DATA;
 
                 //making the sending request.
                 axi.awvalid = 1'b1;
@@ -116,7 +121,7 @@ module cache #(
                 if (set_ptr == 7'd127) begin
                     axi.wlast = 1'b1;
                     if (axi.wready) begin
-                        next_state = WRITING_WRITE_RES;
+                        next_state = WAITING_WRITE_RES;
                     end
                 end
                 //sending data and write stuff
@@ -180,7 +185,7 @@ module cache #(
             end
 
             default: begin
-                $display("CACHE FSM STATE ERROR")
+                $display("CACHE FSM STATE ERROR");
             end
         endcase
     end

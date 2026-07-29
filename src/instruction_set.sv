@@ -1,7 +1,7 @@
-// holy_core_pkg.sv
+// instruction_set_pkg
 `timescale 1ns/1ps
 
-package instruction_set_pkg:
+package instruction_set_pkg;
 
 typedef enum logic[2:0] {
     IDLE,
@@ -9,7 +9,7 @@ typedef enum logic[2:0] {
     SENDING_WRITE_DATA,
     WAITING_WRITE_RES,
     SENDING_READ_REQ,
-    RECEIVING_READ_DATA,
+    RECEIVING_READ_DATA
 }   cache_state_t;
   
   

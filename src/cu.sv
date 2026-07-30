@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+import instruction_set_pkg::*;
 module control(
     input logic [6:0] op,
     input logic [2:0] func3,
@@ -37,7 +38,7 @@ always_comb begin
     // lw command and sw command 
     case(op)
         // and command
-        7'b0000011: begin
+        OPCODE_I_TYPE_LOAD: begin
             reg_write = 1'b1;
             imm_source = 3'b000;
             mem_write = 1'b0;
@@ -47,7 +48,7 @@ always_comb begin
             branch = 1'b0; 
         
         end
-        7'b0100011 : begin
+        OPCODE_S_TYPE : begin
             reg_write = 1'b0;
             imm_source = 3'b001;
             mem_write = 1'b1;
@@ -56,7 +57,7 @@ always_comb begin
             branch = 1'b0; 
         end
         // R-type command verification
-        7'b0110011 : begin
+        OPCODE_R_TYPE : begin
             reg_write = 1'b1;
             mem_write = 1'b0;
             alu_op = 2'b10;
@@ -66,7 +67,7 @@ always_comb begin
 
         end
         // B-type instruction
-        7'b1100011 : begin
+        OPCODE_B_TYPE : begin
             reg_write = 1'b0;
             imm_source = 3'b010;
             alu_source = 1'b0;
@@ -76,7 +77,7 @@ always_comb begin
 
         end
         // j_type jal instruction
-        7'b1101111, 7'b1100111 : begin
+        OPCODE_J_TYPE, OPCODE_J_TYPE_JALR : begin
             reg_write = 1'b1;
             imm_source = 3'b011;
             alu_source = 1'b0;
@@ -94,7 +95,7 @@ always_comb begin
             end   
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
-        7'b0010011 : begin
+        OPCODE_I_TYPE_ALU : begin
             reg_write = 1'b1;
             imm_source = 3'b000;
             alu_source = 1'b1; //imm
@@ -105,7 +106,7 @@ always_comb begin
             jump = 1'b0;
         end
         // U-type command
-        7'b0110111: begin  // LUI
+        OPCODE_U_TYPE_LUI: begin  // LUI
             imm_source = 3'b100;
             mem_write = 1'b0;
             reg_write = 1'b1;
@@ -114,7 +115,7 @@ always_comb begin
             jump = 1'b0;
             second_add_source = 2'b01;
         end
-        7'b0010111: begin  // AUIPC
+        OPCODE_U_TYPE_AUIPC: begin  // AUIPC
             imm_source = 3'b100;
             mem_write = 1'b0;
             reg_write = 1'b1;
@@ -140,9 +141,24 @@ end
 
 
 always_comb begin 
+    alu_control = ALU_ADD; //default
     case(alu_op)
         // LW, SW
         ALU_OP_LOAD_STORE : alu_control = ALU_ADD;
+        ALU_OP_BRANCHES: begin
+            case(func3)
+                F3_BEQ:  alu_control = ALU_SUB;
+                F3_BNE:  alu_control = ALU_SUB;
+
+                F3_BLT:  alu_control = ALU_SLT;
+                F3_BGE:  alu_control = ALU_SLT;
+
+                F3_BLTU: alu_control = ALU_SLTU;
+                F3_BGEU: alu_control = ALU_SLTU;
+
+                default: alu_control = ALU_ADD;
+            endcase
+        end
         // R-Types, I-types
         ALU_OP_MATH : begin
             case (func3)
@@ -179,6 +195,7 @@ always_comb begin
                 end
             endcase
         end
+        default: alu_control = ALU_ADD;
     endcase
 end
 
@@ -187,17 +204,17 @@ logic assert_branch;
 always_comb begin : branch_logic_decode
     case (func3)
         // BEQ
-        3'b000 : assert_branch = alu_zero & branch;
+        F3_BEQ : assert_branch = alu_zero & branch;
         // BLT
-        3'b100 : assert_branch = alu_last_bit & branch;
+        F3_BLT : assert_branch = alu_last_bit & branch;
         //BNE
-        3'b001 : assert_branch = ~alu_zero & branch;
+        F3_BNE : assert_branch = ~alu_zero & branch;
         //BGE
-        3'b101 : assert_branch = ~alu_last_bit & branch;
+        F3_BGE : assert_branch = ~alu_last_bit & branch;
         //bltu
-        3'b110 : assert_branch = alu_unsigned_less & branch;
+        F3_BLTU : assert_branch = alu_unsigned_less & branch;
         //bgeu
-        3'b111 : assert_branch = ~alu_unsigned_less & branch;
+        F3_BGEU : assert_branch = ~alu_unsigned_less & branch;
         default : assert_branch = 1'b0;
     endcase
 end

@@ -8,13 +8,14 @@ WAVES = 1
 SRC_DIR = /Users/luokai/Documents/GitHub/RISC-V-project/src
 VERILOG_SOURCES += $(SRC_DIR)/cpu.sv
 VERILOG_SOURCES += $(SRC_DIR)/memory.sv
+VERILOG_SOURCES += $(SRC_DIR)/instruction_set.sv
 VERILOG_SOURCES += $(SRC_DIR)/cu.sv          # 注意：你的实例化是 control，请确认模块名是 control 还是 cu
 VERILOG_SOURCES += $(SRC_DIR)/regfile.sv
 VERILOG_SOURCES += $(SRC_DIR)/signext.sv
 VERILOG_SOURCES += $(SRC_DIR)/alu.sv
 VERILOG_SOURCES += $(SRC_DIR)/load_store_decoder.sv
 VERILOG_SOURCES += $(SRC_DIR)/reader.sv
-VERILOG_SOURCES += $(SRC_DIR)/cache.sv
+
 
 
 

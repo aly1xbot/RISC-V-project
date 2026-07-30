@@ -271,26 +271,6 @@ reader reader_inst(
 
 
 
-always @(posedge clk)
-begin
-    $display(
-    "pc=%h next=%h source=%b second=%b imm=%h rs1=%h",
-    pc,
-    pc_next,
-    pc_source,
-    second_add_source,
-    immediate,
-    read_reg1
-    );
-end
-
-
-
-
-
-
-
-
 
 endmodule
 

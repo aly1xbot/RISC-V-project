@@ -1,32 +1,35 @@
-interface axi_if#(
+// axi_if.sv
+
+interface axi_if #(
     parameter ADDR_WIDTH = 32,
     parameter DATA_WIDTH = 32,
-    parameter ID_WIDTH = 4
-
+    parameter ID_WIDTH   = 4
 );
 
-//global axi parameter
-logic aclk;
-logic aresetn;
+    // Global AXI Signals
+    logic aclk;
+    logic aresetn;
 
-logic [ID_WIDTH-1:0] awid;
-logic [ADDR_WIDTH-1:0] awaddr;
-logic [7:0] awlen; //burst length
-logic [2:0] awsize; //burst size
-logic [1:0] awburst;
-logic [3:0] awqos; // quality of service
-logic [1:0] awlock; //lock type
-logic awvalid;
-logic awready;
+    // Write Address Channel
+    logic [ID_WIDTH-1:0] awid;
+    logic [ADDR_WIDTH-1:0] awaddr;
+    logic [7:0] awlen;         // Burst length
+    logic [2:0] awsize;        // Burst size
+    logic [1:0] awburst;       // Burst type
+    logic [3:0] awqos;         // Quality of Service
+    logic awlock;        // Lock type
+    logic awvalid;
+    logic awready;
 
-//write data channel
-logic [(DATA_WIDTH/8)-1:0] wstrb;  // Write strobe
-logic wlast;
-logic [DATA_WIDTH-1:0] wdata;
-logic wvalid;
-logic wready;
+    // Write Data Channel
+    logic [DATA_WIDTH-1:0] wdata;
+    logic [(DATA_WIDTH/8)-1:0] wstrb;  // Write strobe
+    logic wlast;                       // Last write in burst
+    logic wvalid;
+    logic wready;
 
-logic [ID_WIDTH-1:0] bid;
+    // Write Response Channel
+    logic [ID_WIDTH-1:0] bid;
     logic [1:0] bresp;  // Write response
     logic bvalid;
     logic bready;
@@ -38,7 +41,7 @@ logic [ID_WIDTH-1:0] bid;
     logic [2:0] arsize;        // Burst size
     logic [1:0] arburst;       // Burst type
     logic [3:0] arqos;         // Quality of Service
-    logic [1:0] arlock;        // Lock type
+    logic arlock;        // Lock type
     logic arvalid;
     logic arready;
 
@@ -149,4 +152,3 @@ logic [ID_WIDTH-1:0] bid;
     );
 
 endinterface
-

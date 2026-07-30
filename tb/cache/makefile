@@ -12,7 +12,7 @@ SRC := /Users/luokai/Documents/GitHub/RISC-V-project/src
 VERILOG_SOURCES += /$(SRC)/instruction_set.sv \
 					$(SRC)/axi_if.sv \
 					$(SRC)/cache.sv \
-					$(SRC)/tb_cache.sv
+					$(PWD)/axi_translator.sv
 					
 					
 
@@ -21,7 +21,7 @@ VERILOG_SOURCES += /$(SRC)/instruction_set.sv \
 # use VHDL_SOURCES for VHDL files
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
-TOPLEVEL = tb_cache
+TOPLEVEL = axi_translator
 
 # MODULE is the basename of the Python test file
 MODULE = test_cache

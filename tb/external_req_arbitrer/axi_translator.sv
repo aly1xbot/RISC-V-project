@@ -3,8 +3,9 @@
 import instruction_set_pkg::*;
 
 module axi_translator (
-    input logic clk, 
+    output logic clk, 
     input logic rst_n,
+    output logic sim_clk_probe,
     // ====================
     // MASTER
 
@@ -135,16 +136,34 @@ module axi_translator (
     // ======================
     // CACHE STATES STIMULUS
 
-    input cache_state_t instr_cache_state,
-    input cache_state_t data_cache_state
+    input logic [3:0] instr_cache_state,
+    input logic [3:0] data_cache_state
     
 );
+
+    initial begin
+        clk = 1'b0;
+        forever #5 clk = ~clk;
+    end
+
+    // Keep the simulation clock as an active Verilator signal.  The DUT is
+    // combinational, so without a clocked signal Verilator can optimize clk
+    // away and cocotb RisingEdge(dut.clk) will never fire.
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            sim_clk_probe <= 1'b0;
+        else
+            sim_clk_probe <= ~sim_clk_probe;
+    end
 
     // ====================
     // MASTER
 
     // Declare the AXI master interface for the cache
     axi_if m_axi();
+
+    assign m_axi.aclk   = clk;
+    assign m_axi.aresetn = rst_n;
 
     // Write Address Channel
     assign m_axi_awid       = m_axi.awid;
@@ -191,6 +210,9 @@ module axi_translator (
 
     axi_if s_axi_instr();
 
+    assign s_axi_instr.aclk   = clk;
+    assign s_axi_instr.aresetn = rst_n;
+
     // Write Address Channel
     assign s_axi_instr.awid     = s_axi_instr_awid;
     assign s_axi_instr.awaddr   = s_axi_instr_awaddr;
@@ -234,6 +256,9 @@ module axi_translator (
     // DATA SLAVE
 
     axi_if s_axi_data();
+
+    assign s_axi_data.aclk   = clk;
+    assign s_axi_data.aresetn = rst_n;
 
     // Write Address Channel
     assign s_axi_data.awid     = s_axi_data_awid;

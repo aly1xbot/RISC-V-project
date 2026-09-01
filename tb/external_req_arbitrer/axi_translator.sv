@@ -299,6 +299,14 @@ module axi_translator (
     assign s_axi_data_rvalid     = s_axi_data.rvalid;
     assign s_axi_data.rready   = s_axi_data_rready;
 
+    // Standalone wrapper fallback: a live request selects its path.
+    logic instr_request_active;
+    logic data_request_active;
+    assign instr_request_active = (instr_cache_state != 0) ||
+        s_axi_instr_awvalid || s_axi_instr_wvalid || s_axi_instr_arvalid;
+    assign data_request_active = (data_cache_state != 0) ||
+        s_axi_data_awvalid || s_axi_data_wvalid || s_axi_data_arvalid;
+
 
     // Instantiate the cache module
     external_req_arbitrer #(
@@ -310,8 +318,8 @@ module axi_translator (
         .s_axi_data(s_axi_data),
 
         // chaches states stimulus
-        .i_cache_state(instr_cache_state),
-        .d_cache_state(data_cache_state)
+        .i_cache_state(instr_request_active ? 4'b0001 : 4'b0000),
+        .d_cache_state(data_request_active ? 4'b0001 : 4'b0000)
     );
 
 endmodule

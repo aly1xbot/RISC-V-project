@@ -1,5 +1,6 @@
 import cocotb
-from cocotb.triggers import RisingEdge, Timer
+from cocotb.handle import Immediate
+from cocotb.triggers import RisingEdge, Timer, with_timeout
 from cocotbext.axi import AxiBus, AxiRam, AxiMaster
 
 
@@ -28,12 +29,13 @@ async def main_test(dut):
 
     # init states to IDLE
 
-    dut.data_cache_state.value = IDLE
-    dut.instr_cache_state.value = IDLE
+    dut.data_cache_state.value = Immediate(IDLE)
+    dut.instr_cache_state.value = Immediate(IDLE)
     await Timer(1, units="ns")
 
 
-    dut.data_cache_state.setimmediatevalue(0b0001)
+    dut.data_cache_state.value = Immediate(SENDING_WRITE_REQ)
+    print("state after drive:", dut.data_cache_state.value)
     await Timer(1, units="ns")
     print("write request:",
     "state", dut.data_cache_state.value,
@@ -45,8 +47,8 @@ async def main_test(dut):
     "s_wready", dut.s_axi_data_wready.value,
     "m_wvalid", dut.m_axi_wvalid.value,
     "m_wready", dut.m_axi_wready.value)
-    await d_cache_master.write(0x000, b'test')
-    dut.data_cache_state.value = IDLE
+    await with_timeout(d_cache_master.write(0x000, b'test'), 100, "ns")
+    dut.data_cache_state.value = Immediate(IDLE)
     await Timer(1, units="ns")
 
     assert axi_ram_slave.read(0x000,4) == b'test'

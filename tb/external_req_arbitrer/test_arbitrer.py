@@ -1,5 +1,8 @@
 import cocotb
-from cocotb.handle import Immediate
+try:
+    from cocotb.handle import Immediate
+except ImportError:
+    Immediate = None
 from cocotb.triggers import RisingEdge, Timer, with_timeout
 from cocotbext.axi import AxiBus, AxiRam, AxiMaster
 
@@ -17,6 +20,12 @@ RECEIVING_READ_DATA = 0b101
 async def main_test(dut):
     dut.rst_n.value = 0
 
+    def drive(handle, value):
+        if Immediate is not None:
+            handle.value = Immediate(value)
+        else:
+            handle.setimmediatevalue(value)
+
     axi_ram_slave = AxiRam(AxiBus.from_prefix(dut, "m_axi"), dut.clk, dut.rst_n, reset_active_level=False, size=4096)
     i_cache_master = AxiMaster(AxiBus.from_prefix(dut, "s_axi_instr"), dut.clk, dut.rst_n, reset_active_level=False)
     d_cache_master = AxiMaster(AxiBus.from_prefix(dut, "s_axi_data"), dut.clk, dut.rst_n, reset_active_level=False)
@@ -29,12 +38,12 @@ async def main_test(dut):
 
     # init states to IDLE
 
-    dut.data_cache_state.value = Immediate(IDLE)
-    dut.instr_cache_state.value = Immediate(IDLE)
+    drive(dut.data_cache_state, IDLE)
+    drive(dut.instr_cache_state, IDLE)
     await Timer(1, units="ns")
 
 
-    dut.data_cache_state.value = Immediate(SENDING_WRITE_REQ)
+    drive(dut.data_cache_state, SENDING_WRITE_REQ)
     print("state after drive:", dut.data_cache_state.value)
     await Timer(1, units="ns")
     print("write request:",
@@ -48,61 +57,61 @@ async def main_test(dut):
     "m_wvalid", dut.m_axi_wvalid.value,
     "m_wready", dut.m_axi_wready.value)
     await with_timeout(d_cache_master.write(0x000, b'test'), 100, "ns")
-    dut.data_cache_state.value = Immediate(IDLE)
+    drive(dut.data_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert axi_ram_slave.read(0x000,4) == b'test'
 
 
-    dut.instr_cache_state.value = SENDING_READ_REQ
+    drive(dut.instr_cache_state, SENDING_READ_REQ)
     await Timer(1, units="ns")
     data = await i_cache_master.read(0x000, 4)
-    dut.instr_cache_state.value = IDLE
+    drive(dut.instr_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert data.data == b'test'
 
 
-    dut.data_cache_state.value = SENDING_READ_REQ
+    drive(dut.data_cache_state, SENDING_READ_REQ)
     await Timer(1, units="ns")
     data = await d_cache_master.read(0x000, 4)
-    dut.data_cache_state.value = IDLE
+    drive(dut.data_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert data.data == b'test'
 
 
 
-    dut.data_cache_state.value = SENDING_READ_REQ
-    dut.instr_cache_state.value = SENDING_READ_REQ
+    drive(dut.data_cache_state, SENDING_READ_REQ)
+    drive(dut.instr_cache_state, SENDING_READ_REQ)
     await Timer(1, units="ns")
     data_i = await i_cache_master.read(0x000, 4)
     await Timer(1, units="ns")
-    dut.instr_cache_state.value = IDLE
+    drive(dut.instr_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert data_i.data == b'test'
 
     data_d = await d_cache_master.read(0x000, 4)
     await Timer(1, units="ns")
-    dut.data_cache_state.value = IDLE
+    drive(dut.data_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert data_d.data == b'test'
 
 
 
-    dut.data_cache_state.value = SENDING_WRITE_REQ
-    dut.instr_cache_state.value = SENDING_WRITE_REQ
+    drive(dut.data_cache_state, SENDING_WRITE_REQ)
+    drive(dut.instr_cache_state, SENDING_WRITE_REQ)
     await Timer(1, units="ns")
     await i_cache_master.write(0x00C, b'beef')
     await Timer(1, units="ns")
-    dut.instr_cache_state.value = IDLE
+    drive(dut.instr_cache_state, IDLE)
     await Timer(1, units="ns")
 
     await d_cache_master.write(0x010, b'1234')
     await Timer(1, units="ns")
-    dut.data_cache_state.value = IDLE
+    drive(dut.data_cache_state, IDLE)
     await Timer(1, units="ns")
 
     assert data_d.data == b'test'

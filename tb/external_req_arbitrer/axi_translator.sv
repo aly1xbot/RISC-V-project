@@ -1,11 +1,19 @@
+/* AXI_TRANSLATOR
+*
+* BRH 11/24
+*
+* This wrapper module instantiates the cache and routes the AXI interface as discrete Verilog signals for cocotb
+*/
 
-
-import instruction_set_pkg::*;
+import instruction_set_pkg ::*;
 
 module axi_translator (
-    output logic clk, 
+    // ====================
+    // Clock and reset are only here to be passed to the external Axi module in the simulations
+
+    output logic clk,
     input logic rst_n,
-    output logic sim_clk_probe,
+
     // ====================
     // MASTER
 
@@ -144,16 +152,6 @@ module axi_translator (
     initial begin
         clk = 1'b0;
         forever #5 clk = ~clk;
-    end
-
-    // Keep the simulation clock as an active Verilator signal.  The DUT is
-    // combinational, so without a clocked signal Verilator can optimize clk
-    // away and cocotb RisingEdge(dut.clk) will never fire.
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n)
-            sim_clk_probe <= 1'b0;
-        else
-            sim_clk_probe <= ~sim_clk_probe;
     end
 
     // ====================
@@ -299,7 +297,8 @@ module axi_translator (
     assign s_axi_data_rvalid     = s_axi_data.rvalid;
     assign s_axi_data.rready   = s_axi_data_rready;
 
-    // Standalone wrapper fallback: a live request selects its path.
+    // The real cache supplies these states.  This wrapper has no cache, so
+    // also select a path whenever cocotb presents a live AXI request.
     logic instr_request_active;
     logic data_request_active;
     assign instr_request_active = (instr_cache_state != 0) ||

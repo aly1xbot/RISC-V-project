@@ -4,7 +4,6 @@
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --trace --trace-structs
-COMPILE_ARGS += --timing
 WAVES = 1
 SRC := /Users/luokai/Documents/GitHub/RISC-V-project/src
 
@@ -27,10 +26,9 @@ TOPLEVEL = axi_translator
 # MODULE is the basename of the Python test file
 MODULE = test_arbitrer
 
-# Use the repository environment when cocotb-config is not on PATH.
-COCOTB_CONFIG ?= $(abspath ../../venv312/bin/cocotb-config)
-COCOTB_CONFIG_DIR := $(abspath ../../venv312/bin)
-export PATH := $(COCOTB_CONFIG_DIR):$(PATH)
 
 # include cocotb's make rules to take care of the simulator setup
-include $(shell $(COCOTB_CONFIG) --makefiles)/Makefile.sim
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
+
+COMPILE_ARGS += --timing

@@ -17,8 +17,11 @@ module control(
     output logic alu_source,
     output logic [1:0] write_back_source,
     output logic pc_source,
-    output logic [1:0]second_add_source
+    output logic [1:0]second_add_source,
+    output logic mem_read
 );
+import instruction_set_pkg::*;
+
 
 //main decoder
 logic [1:0] alu_op;
@@ -46,6 +49,7 @@ always_comb begin
             alu_source = 1'b1;
             write_back_source = 2'b01;
             branch = 1'b0; 
+            mem_read = 1'b1;
         
         end
         OPCODE_S_TYPE : begin
@@ -55,6 +59,7 @@ always_comb begin
             alu_op = 2'b00;
             alu_source = 1'b1;
             branch = 1'b0; 
+            mem_read=1'b0;
         end
         // R-type command verification
         OPCODE_R_TYPE : begin
@@ -64,6 +69,7 @@ always_comb begin
             alu_source = 1'b0;
             write_back_source = 2'b00;
             branch = 1'b0; 
+            mem_read=1'b0;
 
         end
         // B-type instruction
@@ -74,6 +80,7 @@ always_comb begin
             mem_write = 1'b0;
             alu_op = 2'b01;
             branch = 1'b1;
+            mem_read=1'b0;
 
         end
         // j_type jal instruction
@@ -84,6 +91,7 @@ always_comb begin
             mem_write = 1'b0;
             branch = 1'b0;
             jump = 1'b1;
+            mem_read=1'b0;
             write_back_source = 2'b10;
             if(op[3]) begin// jal
                 second_add_source = 2'b00;
@@ -96,7 +104,13 @@ always_comb begin
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
         OPCODE_I_TYPE_ALU : begin
-            reg_write = 1'b1;
+            // RV32I shift-immediate encodings reserve bits [31:25].  Do
+            // not accidentally treat an unsupported encoding as ADDI; the
+            // test image deliberately contains these invalid shift words to
+            // verify that they leave the destination register unchanged.
+            reg_write = !((func3 == F3_SLL && func7 != F7_SLL_SRL) ||
+                          (func3 == F3_SRL_SRA &&
+                           func7 != F7_SLL_SRL && func7 != F7_SRA));
             imm_source = 3'b000;
             alu_source = 1'b1; //imm
             mem_write = 1'b0;
@@ -104,6 +118,7 @@ always_comb begin
             write_back_source = 2'b00; //alu_result
             branch = 1'b0;
             jump = 1'b0;
+            mem_read=1'b0;
         end
         // U-type command
         OPCODE_U_TYPE_LUI: begin  // LUI
@@ -114,6 +129,7 @@ always_comb begin
             branch = 1'b0;
             jump = 1'b0;
             second_add_source = 2'b01;
+            mem_read=1'b0;
         end
         OPCODE_U_TYPE_AUIPC: begin  // AUIPC
             imm_source = 3'b100;
@@ -123,6 +139,7 @@ always_comb begin
             branch = 1'b0;
             jump = 1'b0;
             second_add_source = 2'b00;
+            mem_read=1'b0;
         end
 
         
@@ -131,6 +148,7 @@ always_comb begin
             imm_source = 3'b000;
             mem_write = 1'b0;
             alu_op = 2'b00;
+            mem_read=1'b0;
         
         end   
     endcase

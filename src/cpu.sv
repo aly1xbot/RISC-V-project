@@ -1,11 +1,89 @@
 module cpu (
     input logic clk,
-    input logic rst_n
+    input logic rst_n,
+    axi_if.master m_axi
 
 );
+import instruction_set_pkg::*;
+axi_if m_axi_data();
+axi_if m_axi_inst();
+
+
+// instruction cache integration
+logic i_cache_stall;
+logic d_cache_stall;
+logic [6:0] data_set_ptr;
+logic [6:0] data_next_set_ptr;
+logic [31:0] pc;
+logic [31:0] instruction;
+logic [31:0] mem_read;
+logic [31:0] alu_result;
+logic [31:0] mem_write_data;
+logic [3:0] mem_byte_enable;
+logic mem_read_enable;
+logic mem_write;
+logic stall;
+assign stall = i_cache_stall || d_cache_stall;
+
+cache_state_t i_cache_state;
+cache_state_t d_cache_state;
+cache instr_cache(
+    .clk(clk),
+    .rst_n(rst_n),
+    .aclk(clk),
+
+    .address(pc),
+    .read_data(instruction),
+    .read_enable(1'b1),
+    .write_data(32'd0),
+    .write_enable(1'b0),
+    .byte_enable(4'b0000),
+    .cache_stall(i_cache_stall),
+
+    .axi(m_axi_inst),
+    .cache_state(i_cache_state),
+    .set_ptr_out(instr_set_ptr),
+    .next_set_ptr_out(instr_next_set_ptr)
+);
+
+//data chache integration
+cache data_cache(
+    .clk(clk),
+    .rst_n(rst_n),
+    .aclk(clk),
+
+    .address(alu_result),
+    .read_data(mem_read),
+    .read_enable(mem_read_enable),
+    .write_data(mem_write_data),
+    .write_enable(mem_write),
+    .byte_enable(mem_byte_enable),
+    .cache_stall(d_cache_stall),
+
+    .axi(m_axi_data),
+    .cache_state(d_cache_state),
+    .set_ptr_out(data_set_ptr),
+    .next_set_ptr_out(data_next_set_ptr)
+);
+
+
+//external_req_arbitrator connection
+logic [6:0] instr_set_ptr;
+logic [6:0] instr_next_set_ptr;
+
+//output
+
+
+external_req_arbitrer arbitrer (
+    .m_axi(m_axi),
+    .s_axi_instr(m_axi_inst),
+    .s_axi_data(m_axi_data),
+    .i_cache_state(i_cache_state),
+    .d_cache_state(d_cache_state)
+);
+
 
 // program counter 
-reg [31:0] pc;
 logic [31:0] pc_next;
 logic [31:0] pc_plus_second_add;
 logic [31:0] pc_plus_four;
@@ -18,9 +96,9 @@ wire alu_zero;
 wire [3:0] alu_control;
 wire [2:0] imm_source;
 wire reg_write;
-wire mem_write ;
 wire alu_source;
 wire [1:0] write_back_source;
+
 
 assign pc_plus_four = pc + 4;
 
@@ -43,30 +121,18 @@ end
 always @(posedge clk) begin
     if(rst_n == 0) begin
         pc <= 32'b0;
+    end else if (i_cache_stall || d_cache_stall) begin
+        pc <= pc;
     end else begin
         pc <= pc_next;
     end
 end
 
-wire [31:0] instruction;
 logic [6:0] func7;
 logic [4:0] shamt;
 assign shamt = instruction [24:20];
 assign func7 = instruction[31:25];
-// instruction memory which acting as ROM 
-memory #(
-    .mem_init("./test_imemory.hex")
 
-) instruction_memory(
-    .clk(clk),
-    .address(pc),
-    .write_data(32'b0),
-    .write_enable(1'b0),
-    .rst_n(1'b1),
-    .byte_enable(4'b0000),
-    // Memory Outputs
-    .read_data(instruction)
-);
 
 //control unit part, intercept the instruction from the program counter, acting as cu 
 
@@ -93,6 +159,7 @@ control control(
     .alu_control(alu_control),
     .reg_write (reg_write),
     .mem_write (mem_write),
+    .mem_read (mem_read_enable),
     .imm_source (imm_source),
     .alu_source (alu_source),
     .write_back_source (write_back_source),
@@ -113,8 +180,6 @@ wire [31:0] read_reg1;
 wire [31:0] read_reg2;
 
 // alu_result and mem_read moved before write_back_source_select
-wire [31:0] alu_result;
-
 logic wb_valid;
 logic [31:0] write_back_data;
 always_comb begin : write_back_source_select
@@ -220,7 +285,6 @@ alu alu_inst (
 
 //load-store decoder
 
-wire [3:0] mem_byte_enable;
 wire [31:0] data;
 
 
@@ -237,31 +301,12 @@ load_store_decoder ls_decoder(
 
 
 
-// data memory 
-logic [31:0] mem_write_data;
-wire [31:0] mem_read;
-
-memory #(
-    .mem_init ("./test_dmemory.hex")
-) data_memory(
- // Memory inputs
-    .clk(clk),
-    .address({alu_result[31:2],2'b00}),
-    .write_data(mem_write_data),
-    .write_enable(mem_write),
-    .byte_enable(mem_byte_enable),
-    .rst_n(1'b1),
-
-    // Memory outputs
-    .read_data(mem_read)
-);
-
 //reader
 wire [31:0] mem_read_write_back_data;
 wire mem_read_write_back_valid;
 reader reader_inst(
     .mem_data(mem_read),
-    .be_mask (mem_byte_enable),
+    .be_mask(mem_byte_enable),
     .f3(f3),
     .wb_data(mem_read_write_back_data),
     .valid(mem_read_write_back_valid)
@@ -273,4 +318,3 @@ reader reader_inst(
 
 
 endmodule
-

@@ -1,7 +1,23 @@
 module cpu (
     input logic clk,
     input logic rst_n,
-    axi_if.master m_axi
+    axi_if.master m_axi,
+
+    // OUTGOING DEBUG SIGNALS
+    output logic [31:0] debug_pc,
+    output logic [31:0] debug_pc_next,
+    output logic [31:0] debug_instruction,
+    output logic [3:0] debug_i_cache_state,
+    output logic [3:0] debug_d_cache_state,
+    output logic [6:0] debug_i_set_ptr,
+    output logic [6:0] debug_i_next_set_ptr,
+    output logic [6:0] debug_d_set_ptr,
+    output logic [6:0] debug_d_next_set_ptr,
+    output logic debug_i_cache_stall,
+    output logic debug_d_cache_stall,
+    output logic trap_valid,
+    output logic [4:0] trap_cause,
+    output logic [31:0] trap_pc
 
 );
 import instruction_set_pkg::*;
@@ -9,9 +25,25 @@ axi_if m_axi_data();
 axi_if m_axi_inst();
 
 
+//FPGA debug out system
+assign debug_pc = pc;
+assign debug_pc_next = pc_next;
+assign debug_instruction = instruction;
+assign debug_i_cache_state = i_cache_state;
+assign debug_d_cache_state = d_cache_state;
+assign debug_i_set_ptr = instr_set_ptr;
+assign debug_i_next_set_ptr = instr_next_set_ptr;
+assign debug_d_set_ptr = data_set_ptr;
+assign debug_d_next_set_ptr = data_next_set_ptr;
+assign debug_i_cache_stall = i_cache_stall;
+assign debug_d_cache_stall = d_cache_stall;
+assign trap_pc = pc;
+
+
 // instruction cache integration
 logic i_cache_stall;
 logic d_cache_stall;
+logic data_cache_flush_done;
 logic [6:0] data_set_ptr;
 logic [6:0] data_next_set_ptr;
 logic [31:0] pc;
@@ -22,8 +54,13 @@ logic [31:0] mem_write_data;
 logic [3:0] mem_byte_enable;
 logic mem_read_enable;
 logic mem_write;
-logic stall;
-assign stall = i_cache_stall || d_cache_stall;
+logic data_read_enable;
+logic data_write_enable;
+logic control_trap_valid;
+
+assign data_read_enable = mem_read_enable && !i_cache_stall;
+assign data_write_enable = mem_write && !i_cache_stall;
+assign trap_valid = control_trap_valid && !i_cache_stall;
 
 cache_state_t i_cache_state;
 cache_state_t d_cache_state;
@@ -37,8 +74,10 @@ cache instr_cache(
     .read_enable(1'b1),
     .write_data(32'd0),
     .write_enable(1'b0),
+    .flush(1'b0),
     .byte_enable(4'b0000),
     .cache_stall(i_cache_stall),
+    .flush_done(),
 
     .axi(m_axi_inst),
     .cache_state(i_cache_state),
@@ -54,11 +93,13 @@ cache data_cache(
 
     .address(alu_result),
     .read_data(mem_read),
-    .read_enable(mem_read_enable),
+    .read_enable(data_read_enable),
     .write_data(mem_write_data),
-    .write_enable(mem_write),
+    .write_enable(data_write_enable),
+    .flush(fence && !i_cache_stall),
     .byte_enable(mem_byte_enable),
     .cache_stall(d_cache_stall),
+    .flush_done(data_cache_flush_done),
 
     .axi(m_axi_data),
     .cache_state(d_cache_state),
@@ -98,15 +139,21 @@ wire [2:0] imm_source;
 wire reg_write;
 wire alu_source;
 wire [1:0] write_back_source;
+wire fence;
 
 
 assign pc_plus_four = pc + 4;
 
 always_comb begin : pc_select
-    case (pc_source)
-        1'b0 : pc_next = pc_plus_four; // pc_target
-        1'b1 : pc_next = pc_plus_second_add;
-    endcase
+    if (trap_valid || i_cache_stall || d_cache_stall ||
+        (fence && !data_cache_flush_done)) begin
+        pc_next = pc;
+    end else begin
+        case (pc_source)
+            1'b0 : pc_next = pc_plus_four; // pc_target
+            1'b1 : pc_next = pc_plus_second_add;
+        endcase
+    end
 end
 
 always_comb begin : second_add_select
@@ -121,8 +168,6 @@ end
 always @(posedge clk) begin
     if(rst_n == 0) begin
         pc <= 32'b0;
-    end else if (i_cache_stall || d_cache_stall) begin
-        pc <= pc;
     end else begin
         pc <= pc_next;
     end
@@ -141,6 +186,8 @@ logic [6:0] op;
 assign op = instruction [6:0];
 logic [2:0] f3;
 assign f3 = instruction[14:12];
+logic [11:0] system_imm;
+assign system_imm = instruction[31:20];
 logic alu_last_bit;
 assign alu_last_bit = last_bit;
 logic alu_unsigned_less;
@@ -150,6 +197,7 @@ control control(
     .op(op),
     .func3(f3),
     .func7(func7),
+    .system_imm(system_imm),
     .alu_zero(alu_zero),
     .shamt(shamt),
     .alu_last_bit(alu_last_bit),
@@ -160,11 +208,14 @@ control control(
     .reg_write (reg_write),
     .mem_write (mem_write),
     .mem_read (mem_read_enable),
+    .fence(fence),
     .imm_source (imm_source),
     .alu_source (alu_source),
     .write_back_source (write_back_source),
     .pc_source (pc_source),
-    .second_add_source(second_add_source)
+    .second_add_source(second_add_source),
+    .trap_valid(control_trap_valid),
+    .trap_cause(trap_cause)
 
 );
 
@@ -196,6 +247,7 @@ always_comb begin : write_back_source_select
         2'b10: begin
             write_back_data = pc_plus_four;
             wb_valid = 1'b1;
+            
         end
         2'b11: begin
             write_back_data = pc_plus_second_add;
@@ -219,7 +271,8 @@ regfile regfile(
     .read_data1(read_reg1),
     .read_data2(read_reg2),
     //write in
-    .write_enable(reg_write & wb_valid),
+    .write_enable(reg_write & wb_valid & !i_cache_stall &
+                  !d_cache_stall & !trap_valid),
     .write_data(write_back_data),
     .address3(dest_reg)
 

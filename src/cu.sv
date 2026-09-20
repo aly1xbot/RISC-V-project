@@ -6,6 +6,7 @@ module control(
     input logic [6:0] func7,
     input logic alu_zero,
     input logic [4:0] shamt,
+    input logic [11:0] system_imm,
     input logic alu_last_bit,
     input logic alu_unsigned_less,
     
@@ -18,7 +19,10 @@ module control(
     output logic [1:0] write_back_source,
     output logic pc_source,
     output logic [1:0]second_add_source,
-    output logic mem_read
+    output logic mem_read,
+    output logic fence,
+    output logic trap_valid,
+    output logic [4:0] trap_cause
 );
 import instruction_set_pkg::*;
 
@@ -38,6 +42,10 @@ always_comb begin
     branch = 1'b0;
     jump = 1'b0;
     second_add_source = 2'b00; 
+    mem_read = 1'b0;
+    fence = 1'b0;
+    trap_valid = 1'b0;
+    trap_cause = 5'd0;
     // lw command and sw command 
     case(op)
         // and command
@@ -100,6 +108,11 @@ always_comb begin
             else if (~op[3]) begin // jalr
                 second_add_source = 2'b10;
                 imm_source = 3'b000;
+                // JALR is defined only for funct3=000.
+                if (func3 != 3'b000) begin
+                    reg_write = 1'b0;
+                    jump = 1'b0;
+                end
             end   
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
@@ -140,6 +153,26 @@ always_comb begin
             jump = 1'b0;
             second_add_source = 2'b00;
             mem_read=1'b0;
+        end
+
+        // FENCE and FENCE.TSO (funct3=000) use the conservative full
+        // data-cache flush implemented by the CPU/cache interface.
+        OPCODE_MISC_MEM: begin
+            if (func3 == 3'b000)
+                fence = 1'b1;
+        end
+
+        // This core has no privileged trap vector/CSR implementation yet.
+        // Report ECALL/EBREAK on the sideband trap interface; the CPU holds
+        // the current PC until an external environment handles the trap.
+        OPCODE_CSR: begin
+            if (func3 == 3'b000 && system_imm == ECALL) begin
+                trap_valid = 1'b1;
+                trap_cause = 5'd11; // Environment call from M-mode
+            end else if (func3 == 3'b000 && system_imm == EBREAK) begin
+                trap_valid = 1'b1;
+                trap_cause = 5'd3; // Breakpoint
+            end
         end
 
         
@@ -236,6 +269,8 @@ always_comb begin : branch_logic_decode
         default : assert_branch = 1'b0;
     endcase
 end
+
+
 
 
 assign pc_source = assert_branch | jump;

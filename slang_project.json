@@ -1,11 +1,17 @@
 {
     "include_dirs": ["./src"],
     "source_files": [
+        "./src/instruction_set.sv",
+        "./src/axi_if.sv",
         "./src/cpu.sv",
-        "./src/control.sv",
+        "./src/cu.sv",
         "./src/memory.sv",
         "./src/regfile.sv",
         "./src/signext.sv",
-        "./src/alu.sv"
+        "./src/alu.sv",
+        "./src/load_store_decoder.sv",
+        "./src/reader.sv",
+        "./src/cache.sv",
+        "./src/external_req_arbitrer.sv"
     ]
 }

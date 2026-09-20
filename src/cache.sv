@@ -13,9 +13,11 @@ module cache #(
     input logic [31:0] write_data,
     input logic read_enable,
     input logic write_enable,
+    input logic flush,
     input logic [3:0]byte_enable,
     output logic [31:0] read_data,
     output logic cache_stall,
+    output logic flush_done,
     output cache_state_t cache_state,
     //debug signal
     output logic [6:0] set_ptr_out,
@@ -33,6 +35,7 @@ module cache #(
     logic comb_stall, seq_stall;
     assign comb_stall = (next_state != IDLE) | (~hit & (read_enable | actual_write_enable));
     assign cache_stall = comb_stall | seq_stall;
+    assign flush_done = (state == IDLE) && !cache_dirty;
 
 
     // Here is how a cache line is organized:
@@ -74,12 +77,14 @@ module cache #(
     // CACHE LOGIC
     // =======================
     cache_state_t state, next_state;
+    logic flush_pending;
     //main clock driven seq logic 
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             cache_valid <= 1'b0;
             cache_dirty <= 1'b0;
             seq_stall <= 1'b0;
+            flush_pending <= 1'b0;
         end else begin
             cache_valid <= next_cache_valid;
             cache_dirty <= next_cache_dirty;
@@ -100,6 +105,12 @@ module cache #(
                     cache_dirty <= 1'b0;
                 end
             end
+
+            if (state == IDLE && flush && cache_valid && cache_dirty)
+                flush_pending <= 1'b1;
+            else if (state == WAITING_WRITE_RES && axi.bvalid &&
+                     axi.bresp == 2'b00 && flush_pending)
+                flush_pending <= 1'b0;
         end
     end
     //clock drive seq logic cycle
@@ -116,6 +127,7 @@ module cache #(
     always_comb begin
         next_state = state;
         next_cache_valid = cache_valid;
+        next_cache_dirty = cache_dirty;
         axi.wlast = 1'b0;
 
         axi.wdata = cache_data[set_ptr];
@@ -126,6 +138,10 @@ module cache #(
             IDLE: begin
                 if (read_enable && write_enable) begin
                     $display("E : CAN't READ WRITE AT THE SAME TIME");
+                end
+
+                else if (flush && cache_valid && cache_dirty) begin
+                    next_state = SENDING_WRITE_REQ;
                 end
 
                 else if (hit && read_enable) begin
@@ -180,7 +196,8 @@ module cache #(
 
             WAITING_WRITE_RES: begin
                 if (axi.bvalid && (axi.bresp == 2'b00)) begin
-                    next_state = SENDING_READ_REQ;
+                    next_cache_dirty = 1'b0;
+                    next_state = flush_pending ? IDLE : SENDING_READ_REQ;
                 end else if (axi.bvalid && (axi.bresp != 2'b00)) begin
                     $display("ERROR WRITING TO MAIN MEMORY");
                 end

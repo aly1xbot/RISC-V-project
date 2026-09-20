@@ -133,9 +133,11 @@ module axi_translator (
         .write_data(cpu_write_data),
         .read_enable(cpu_read_enable),
         .write_enable(cpu_write_enable),
+        .flush(1'b0),
         .byte_enable(cpu_byte_enable),
         .read_data(cpu_read_data),
         .cache_stall(cpu_cache_stall),
+        .flush_done(),
         .cache_state(cache_state),
 
         // debug interface

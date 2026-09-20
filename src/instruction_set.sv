@@ -38,6 +38,7 @@ package instruction_set_pkg;
     OPCODE_U_TYPE_AUIPC   = 7'b0010111,
     OPCODE_J_TYPE         = 7'b1101111,
     OPCODE_J_TYPE_JALR    = 7'b1100111,
+    OPCODE_MISC_MEM       = 7'b0001111,
     OPCODE_CSR            = 7'b1110011
   } opcode_t;
 
@@ -120,6 +121,12 @@ package instruction_set_pkg;
     logic [15:12] datasize;
     logic [11:0]  dataaddr;
   } hartinfo_t;
+
+  // SYSTEM instruction immediate encodings supported by the core.
+  typedef enum logic [11:0] {
+    ECALL  = 12'h000,
+    EBREAK = 12'h001
+  } system_imm_t;
 
   localparam logic [3:0] DataCount = 4'h2;
 

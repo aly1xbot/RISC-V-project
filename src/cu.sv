@@ -7,6 +7,8 @@ module control(
     input logic alu_zero,
     input logic [4:0] shamt,
     input logic [11:0] system_imm,
+    input logic [4:0] rs1,
+    input logic [4:0] rd,
     input logic alu_last_bit,
     input logic alu_unsigned_less,
     
@@ -22,6 +24,10 @@ module control(
     output logic mem_read,
     output logic fence,
     output logic fence_i,
+    output logic csr_enable,
+    output logic [1:0] csr_op,
+    output logic csr_use_imm,
+    output logic mret,
     output logic trap_valid,
     output logic [4:0] trap_cause
 );
@@ -46,6 +52,10 @@ always_comb begin
     mem_read = 1'b0;
     fence = 1'b0;
     fence_i = 1'b0;
+    csr_enable = 1'b0;
+    csr_op = 2'b00;
+    csr_use_imm = 1'b0;
+    mret = 1'b0;
     // Unknown or reserved encodings trap instead of silently acting as NOPs.
     trap_valid = 1'b1;
     trap_cause = 5'd2; // Illegal instruction
@@ -171,22 +181,38 @@ always_comb begin
             if (func3 == 3'b000) begin
                 trap_valid = 1'b0;
                 fence = 1'b1;
-            end else if (func3 == 3'b001) begin
+            end else if (func3 == 3'b001 && system_imm == 12'b0 &&
+                         rs1 == 5'b0 && rd == 5'b0) begin
                 trap_valid = 1'b0;
                 fence_i = 1'b1;
             end
         end
 
-        // This core has no privileged trap vector/CSR implementation yet.
-        // Report ECALL/EBREAK on the sideband trap interface; the CPU holds
-        // the current PC until an external environment handles the trap.
         OPCODE_CSR: begin
-            if (func3 == 3'b000 && system_imm == ECALL) begin
-                trap_valid = 1'b1;
-                trap_cause = 5'd11; // Environment call from M-mode
-            end else if (func3 == 3'b000 && system_imm == EBREAK) begin
-                trap_valid = 1'b1;
-                trap_cause = 5'd3; // Breakpoint
+            if (func3 == 3'b000) begin
+                if (rs1 == 5'd0 && rd == 5'd0 && system_imm == ECALL) begin
+                    trap_valid = 1'b1;
+                    trap_cause = 5'd11;
+                end else if (rs1 == 5'd0 && rd == 5'd0 && system_imm == EBREAK) begin
+                    trap_valid = 1'b1;
+                    trap_cause = 5'd3;
+                end else if (rs1 == 5'd0 && rd == 5'd0 && system_imm == MRET) begin
+                    trap_valid = 1'b0;
+                    mret = 1'b1;
+                end
+            end else if (func3 == 3'b001 || func3 == 3'b010 ||
+                         func3 == 3'b011 || func3 == 3'b101 ||
+                         func3 == 3'b110 || func3 == 3'b111) begin
+                trap_valid = 1'b0;
+                csr_enable = 1'b1;
+                reg_write = 1'b1;
+                csr_use_imm = func3[2];
+                case (func3[1:0])
+                    2'b01: csr_op = 2'b00; // CSRRW[I]
+                    2'b10: csr_op = 2'b01; // CSRRS[I]
+                    2'b11: csr_op = 2'b10; // CSRRC[I]
+                    default: csr_op = 2'b00;
+                endcase
             end
         end
 

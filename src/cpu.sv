@@ -1,8 +1,6 @@
 module cpu (
     input logic clk,
     input logic rst_n,
-    input logic trap_ack,
-    input logic [31:0] trap_handler_pc,
     axi_if.master m_axi,
 
     // OUTGOING DEBUG SIGNALS
@@ -89,7 +87,7 @@ assign stall = i_cache_stall || d_cache_stall || fence_i_hold ||
 always_ff @(posedge clk) begin
     if (!rst_n) begin
         fence_i_state <= FENCE_I_IDLE;
-    end else if (trap_ack) begin
+    end else if (trap_valid) begin
         fence_i_state <= FENCE_I_IDLE;
     end else begin
         case (fence_i_state)
@@ -126,7 +124,7 @@ cache instr_cache(
     .write_enable(1'b0),
     .flush(1'b0),
     .invalidate(fence_i_state == FENCE_I_INVALIDATE),
-    .clear_error(trap_ack),
+    .clear_error(trap_valid),
     .byte_enable(4'b0000),
     .cache_stall(i_cache_stall),
     .flush_done(),
@@ -157,7 +155,7 @@ cache data_cache(
     .cache_stall(d_cache_stall),
     .flush_done(data_cache_flush_done),
     .invalidate(1'b0),
-    .clear_error(trap_ack),
+    .clear_error(trap_valid),
     .invalidate_done(),
     .access_error(d_cache_error),
 
@@ -201,15 +199,29 @@ wire alu_source;
 wire [1:0] write_back_source;
 wire fence;
 wire fence_i;
+wire csr_enable;
+wire [1:0] csr_op;
+wire csr_use_imm;
+wire mret;
+logic [31:0] csr_read_data;
+logic csr_address_valid;
+logic [31:0] csr_mtvec;
+logic [31:0] csr_mepc;
+logic [31:0] csr_mcause;
+logic [31:0] csr_mstatus;
+logic [31:0] csr_write_data;
+logic csr_write_enable;
 
 
 assign pc_plus_four = pc + 4;
 
 always_comb begin : pc_select
     if (trap_valid) begin
-        pc_next = trap_ack ? trap_handler_pc : pc;
+        pc_next = {csr_mtvec[31:2], 2'b00};
     end else if (stall) begin
         pc_next = pc;
+    end else if (mret) begin
+        pc_next = csr_mepc;
     end else begin
         case (pc_source)
             1'b0 : pc_next = pc_plus_four; // pc_target
@@ -270,7 +282,9 @@ end
 always_comb begin : trap_select
     trap_valid = 1'b0;
     trap_cause = 5'd0;
-    if (!i_cache_stall) begin
+    // Retire a fault only after both caches have completed any active AXI
+    // burst. This keeps a trap redirect from abandoning a bus transaction.
+    if (!i_cache_stall && !d_cache_stall) begin
         if (i_cache_error) begin
             trap_valid = 1'b1;
             trap_cause = 5'd1; // Instruction access fault
@@ -286,6 +300,9 @@ always_comb begin : trap_select
         end else if (data_misaligned && mem_write) begin
             trap_valid = 1'b1;
             trap_cause = 5'd6; // Store/AMO-address-misaligned
+        end else if (csr_enable && !csr_address_valid) begin
+            trap_valid = 1'b1;
+            trap_cause = 5'd2; // Unsupported CSR address
         end else if (control_trap_valid) begin
             trap_valid = 1'b1;
             trap_cause = control_trap_cause;
@@ -298,6 +315,8 @@ control control(
     .func3(f3),
     .func7(func7),
     .system_imm(system_imm),
+    .rs1(instruction[19:15]),
+    .rd(instruction[11:7]),
     .alu_zero(alu_zero),
     .shamt(shamt),
     .alu_last_bit(alu_last_bit),
@@ -310,6 +329,10 @@ control control(
     .mem_read (mem_read_enable),
     .fence(fence),
     .fence_i(fence_i),
+    .csr_enable(csr_enable),
+    .csr_op(csr_op),
+    .csr_use_imm(csr_use_imm),
+    .mret(mret),
     .imm_source (imm_source),
     .alu_source (alu_source),
     .write_back_source (write_back_source),
@@ -331,11 +354,38 @@ assign dest_reg = instruction[11:7];
 wire [31:0] read_reg1;
 wire [31:0] read_reg2;
 
+assign csr_write_data = csr_use_imm ? {27'b0, source_reg1} : read_reg1;
+assign csr_write_enable = csr_enable && csr_address_valid && !stall &&
+                          !trap_valid &&
+                          ((csr_op == 2'b00) || (csr_write_data != 32'b0));
+
+csr_file csr_file_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .csr_address(system_imm),
+    .csr_write_enable(csr_write_enable),
+    .csr_op(csr_op),
+    .csr_write_data(csr_write_data),
+    .trap_enter(trap_valid),
+    .trap_pc(pc),
+    .trap_cause(trap_cause),
+    .mret(mret && !stall && !trap_valid),
+    .csr_read_data(csr_read_data),
+    .csr_address_valid(csr_address_valid),
+    .mtvec(csr_mtvec),
+    .mepc(csr_mepc),
+    .mcause(csr_mcause),
+    .mstatus(csr_mstatus)
+);
+
 // alu_result and mem_read moved before write_back_source_select
 logic wb_valid;
 logic [31:0] write_back_data;
 always_comb begin : write_back_source_select
-    case (write_back_source)
+    if (csr_enable) begin
+        write_back_data = csr_read_data;
+        wb_valid = csr_address_valid;
+    end else case (write_back_source)
         2'b00: begin
             write_back_data = alu_result;
             wb_valid = 1'b1;

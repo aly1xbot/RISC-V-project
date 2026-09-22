@@ -4,6 +4,7 @@
         "./src/instruction_set.sv",
         "./src/axi_if.sv",
         "./src/cpu.sv",
+        "./src/csr_file.sv",
         "./src/cu.sv",
         "./src/memory.sv",
         "./src/regfile.sv",

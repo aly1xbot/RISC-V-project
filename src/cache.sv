@@ -1,309 +1,269 @@
-import instruction_set_pkg ::*;
+import instruction_set_pkg::*;
 
 module cache #(
-    parameter CACHE_SIZE = 128 // FIXED !
+    parameter integer CACHE_SIZE = 128,
+    parameter integer LINE_WORDS = 4
 )(
-    // CPU LOGIC CLOCK & RESET
-    input logic clk,
-    input logic rst_n,
-    input logic aclk, // Axi clock, will be the same as clk in the end..
-
-    // CPU Interface
-    input logic [31:0] address,
-    input logic [31:0] write_data,
-    input logic read_enable,
-    input logic write_enable,
-    input logic flush,
-    input logic invalidate,
-    input logic clear_error,
-    input logic [3:0]byte_enable,
-    output logic [31:0] read_data,
-    output logic cache_stall,
-    output logic flush_done,
-    output logic invalidate_done,
-    output logic access_error,
-    output cache_state_t cache_state,
-    //debug signal
-    output logic [6:0] set_ptr_out,
-    output logic [6:0] next_set_ptr_out,
-
-    // AXI Interface for external requests
+    input logic clk, input logic rst_n, input logic aclk,
+    input logic [31:0] address, input logic [31:0] write_data,
+    input logic read_enable, input logic write_enable,
+    input logic flush, input logic invalidate, input logic clear_error,
+    input logic [3:0] byte_enable,
+    output logic [31:0] read_data, output logic cache_stall,
+    output logic flush_done, output logic invalidate_done,
+    output logic access_error, output cache_state_t cache_state,
+    output logic [6:0] set_ptr_out, output logic [6:0] next_set_ptr_out,
     axi_if.master axi
 );
-    assign set_ptr_out = set_ptr;
-    assign next_set_ptr_out = next_set_ptr;
+    localparam integer LINE_COUNT = CACHE_SIZE / LINE_WORDS;
+    localparam integer OFFSET_BITS = $clog2(LINE_WORDS);
+    localparam integer INDEX_BITS = $clog2(LINE_COUNT);
+    localparam integer TAG_BITS = 32 - 2 - OFFSET_BITS - INDEX_BITS;
 
-    // STALL LOGIC
-    logic actual_write_enable;
-    assign actual_write_enable = write_enable & |byte_enable;
-    logic comb_stall, seq_stall;
-    assign comb_stall = (next_state != IDLE) | (~hit & (read_enable | actual_write_enable));
-    assign cache_stall = comb_stall | seq_stall;
-    assign flush_done = (state == IDLE) && !cache_dirty;
-    assign invalidate_done = (state == IDLE) && !cache_valid;
+    typedef logic [INDEX_BITS-1:0] line_index_t;
+    typedef logic [OFFSET_BITS-1:0] word_offset_t;
+    typedef logic [TAG_BITS-1:0] tag_t;
+    localparam line_index_t LAST_LINE = line_index_t'(LINE_COUNT-1);
+    localparam word_offset_t LAST_WORD = word_offset_t'(LINE_WORDS-1);
+    localparam logic [7:0] AXI_LINE_LENGTH = 8'(LINE_WORDS-1);
 
+    logic [CACHE_SIZE-1:0][31:0] cache_data;
+    tag_t cache_tags [0:LINE_COUNT-1];
+    logic cache_valids [0:LINE_COUNT-1];
+    logic cache_dirtys [0:LINE_COUNT-1];
 
-    // Here is how a cache line is organized:
-    // | DIRTY | VALID | BLOCK TAG | INDEX/SET | OFFSET | DATA |
-    // | FLAGS         | ADDRESS INFOS                  | DATA |
+    line_index_t req_line_index, pending_line_index, evict_line_index;
+    line_index_t flush_scan_index;
+    word_offset_t req_word_offset, beat_ptr, next_beat_ptr;
+    tag_t req_tag, pending_tag;
+    logic [INDEX_BITS+OFFSET_BITS-1:0] req_data_index;
+    logic hit, actual_write_enable, any_dirty, any_valid, miss_pending;
+    logic fill_error;
+    cache_state_t state, next_state;
 
-    // CACHE TABLE DECLARATION (hardcoded for now)
-    logic [CACHE_SIZE-1:0][31:0]    cache_data;   // CHANGED FOR A PACKED ARRAY FOR FPGA IMPL
-    logic [31:9]                    cache_block_tag;
-    logic                           cache_valid;  // is the current block valid ?
-    logic                           next_cache_valid;
-    logic                           cache_dirty;
-    logic                           next_cache_dirty;
+    // Compatibility probes for existing waveform and cocotb consumers.
+    wire cache_valid = cache_valids[req_line_index];
+    wire cache_dirty = cache_dirtys[req_line_index];
+    wire [TAG_BITS-1:0] cache_block_tag = cache_tags[req_line_index];
 
-    
-    // STALL LOGIC
-    // INCOMING CACHE REQUEST SIGNALS
-    logic [31:9]                    req_block_tag;
-    assign req_block_tag = address[31:9];
-    // requested place in cache, written / read if tag hits
-    logic [8:2] req_index;
-    assign req_index = address[8:2];
+    assign req_word_offset = address[2 +: OFFSET_BITS];
+    assign req_line_index = address[2+OFFSET_BITS +: INDEX_BITS];
+    assign req_tag = address[31 -: TAG_BITS];
+    assign req_data_index = {req_line_index, req_word_offset};
+    assign actual_write_enable = write_enable && |byte_enable;
+    assign hit = cache_valids[req_line_index] &&
+                 (cache_tags[req_line_index] == req_tag);
 
-    logic [6:0] set_ptr;
-    logic [6:0] next_set_ptr;
-    wire [31:0] byte_enable_mask;
-    assign byte_enable_mask = {
-        {8{byte_enable[3]}},
-        {8{byte_enable[2]}},
-        {8{byte_enable[1]}},
-        {8{byte_enable[0]}}
+    always_comb begin
+        any_dirty = 1'b0;
+        any_valid = 1'b0;
+        for (int line = 0; line < LINE_COUNT; line++) begin
+            any_dirty |= cache_valids[line] && cache_dirtys[line];
+            any_valid |= cache_valids[line];
+        end
+    end
+
+    assign cache_stall = (state != IDLE) || invalidate ||
+                         (flush && any_dirty) ||
+                         ((read_enable || actual_write_enable) && !hit);
+    assign flush_done = (state == IDLE) && !any_dirty;
+    assign invalidate_done = (state == IDLE) && !any_valid;
+    assign cache_state = state;
+    assign set_ptr_out = {{(7-OFFSET_BITS){1'b0}}, beat_ptr};
+    assign next_set_ptr_out = {{(7-OFFSET_BITS){1'b0}}, next_beat_ptr};
+
+    wire [31:0] byte_enable_mask = {
+        {8{byte_enable[3]}}, {8{byte_enable[2]}},
+        {8{byte_enable[1]}}, {8{byte_enable[0]}}
     };
 
-    // HIT LOGIC
-    logic hit;
-    assign hit = (req_block_tag == cache_block_tag) && cache_valid;
-
-    // =======================
-    // CACHE LOGIC
-    // =======================
-    cache_state_t state, next_state;
-    logic flush_pending;
-    //main clock driven seq logic 
     always_ff @(posedge clk) begin
-        if (~rst_n) begin
-            cache_valid <= 1'b0;
-            cache_dirty <= 1'b0;
-            seq_stall <= 1'b0;
-            flush_pending <= 1'b0;
+        if (!rst_n) begin
+            state <= IDLE;
+            beat_ptr <= '0;
+            pending_line_index <= '0;
+            pending_tag <= '0;
+            evict_line_index <= '0;
+            flush_scan_index <= '0;
+            miss_pending <= 1'b0;
+            fill_error <= 1'b0;
             access_error <= 1'b0;
+            for (int line = 0; line < LINE_COUNT; line++) begin
+                cache_tags[line] <= '0;
+                cache_valids[line] <= 1'b0;
+                cache_dirtys[line] <= 1'b0;
+            end
+            for (int word_index = 0; word_index < CACHE_SIZE; word_index++)
+                cache_data[word_index] <= '0;
         end else begin
-            cache_valid <= next_cache_valid;
-            cache_dirty <= next_cache_dirty;
-            seq_stall <= comb_stall;
+            state <= next_state;
+            beat_ptr <= next_beat_ptr;
 
             if (clear_error)
                 access_error <= 1'b0;
-            else if ((state == WAITING_WRITE_RES && axi.bvalid &&
-                      axi.bresp != 2'b00) ||
-                     (state == RECEIVING_READ_DATA && axi.rvalid &&
-                      axi.rresp != 2'b00))
+            else if ((state == WAITING_WRITE_RES && axi.bvalid && axi.bresp != 2'b00) ||
+                     (state == RECEIVING_READ_DATA && axi.rvalid && axi.rresp != 2'b00))
                 access_error <= 1'b1;
 
-            if (invalidate && state == IDLE)
-                cache_valid <= 1'b0;
-
-            if(hit & write_enable & state == IDLE) begin
-                cache_data[req_index] <=
-                    (cache_data[req_index] & ~byte_enable_mask) |
+            if (state == IDLE && invalidate) begin
+                for (int line = 0; line < LINE_COUNT; line++) begin
+                    cache_valids[line] <= 1'b0;
+                    cache_dirtys[line] <= 1'b0;
+                end
+            end else if (state == IDLE && hit && actual_write_enable) begin
+                cache_data[req_data_index] <=
+                    (cache_data[req_data_index] & ~byte_enable_mask) |
                     (write_data & byte_enable_mask);
-                cache_dirty <= 1'b1;
+                cache_dirtys[req_line_index] <= 1'b1;
             end
-            // More on this else if just below
-            else if(axi.rvalid & state == RECEIVING_READ_DATA & axi.rready &&
-                    axi.rresp == 2'b00) begin
-                // Write incomming axi read
-                cache_data[set_ptr] <= axi.rdata;
-                if(axi.rready & axi.rlast) begin
-                    cache_block_tag <= req_block_tag;
-                    cache_dirty <= 1'b0;
+
+            if (state == IDLE && flush && any_dirty)
+                flush_scan_index <= '0;
+            else if (state == FLUSH_SCAN &&
+                     !(cache_valids[flush_scan_index] && cache_dirtys[flush_scan_index]) &&
+                     flush_scan_index != LAST_LINE)
+                flush_scan_index <= flush_scan_index + 1'b1;
+
+            if (state == FLUSH_SCAN && cache_valids[flush_scan_index] &&
+                cache_dirtys[flush_scan_index]) begin
+                evict_line_index <= flush_scan_index;
+                miss_pending <= 1'b0;
+            end
+
+            if (state == IDLE && !invalidate && !(flush && any_dirty) &&
+                !hit && (read_enable || actual_write_enable)) begin
+                pending_line_index <= req_line_index;
+                pending_tag <= req_tag;
+                miss_pending <= 1'b1;
+                if (cache_valids[req_line_index] && cache_dirtys[req_line_index])
+                    evict_line_index <= req_line_index;
+            end
+
+            if (state == SENDING_WRITE_DATA && axi.wready &&
+                beat_ptr == LAST_WORD)
+                beat_ptr <= '0;
+
+            if (state == WAITING_WRITE_RES && axi.bvalid) begin
+                if (axi.bresp == 2'b00) begin
+                    cache_dirtys[evict_line_index] <= 1'b0;
+                    if (!miss_pending && evict_line_index != LAST_LINE)
+                        flush_scan_index <= evict_line_index + 1'b1;
+                end else begin
+                    miss_pending <= 1'b0;
                 end
             end
 
-            if (state == IDLE && flush && cache_valid && cache_dirty)
-                flush_pending <= 1'b1;
-            else if (state == WAITING_WRITE_RES && axi.bvalid &&
-                     axi.bresp == 2'b00 && flush_pending)
-                flush_pending <= 1'b0;
+            if (state == SENDING_READ_REQ && axi.arready)
+                fill_error <= 1'b0;
+
+            if (state == RECEIVING_READ_DATA && axi.rvalid) begin
+                if (axi.rresp == 2'b00) begin
+                    cache_data[{pending_line_index, beat_ptr}] <= axi.rdata;
+                    if (axi.rlast) begin
+                        if (!fill_error) begin
+                            cache_tags[pending_line_index] <= pending_tag;
+                            cache_valids[pending_line_index] <= 1'b1;
+                        end else begin
+                            cache_valids[pending_line_index] <= 1'b0;
+                        end
+                        cache_dirtys[pending_line_index] <= 1'b0;
+                        miss_pending <= 1'b0;
+                        beat_ptr <= '0;
+                    end
+                end else begin
+                    cache_valids[pending_line_index] <= 1'b0;
+                    fill_error <= 1'b1;
+                    if (axi.rlast) begin
+                        miss_pending <= 1'b0;
+                        beat_ptr <= '0;
+                    end
+                end
+            end
         end
     end
-    //clock drive seq logic cycle
-    always_ff @(posedge clk) begin
-        if (~rst_n) begin
-            state <=IDLE;
-            set_ptr <= 7'd0;
-        end else begin
-            state <= next_state;
-            set_ptr <= next_set_ptr;
-        end
-    end
-    // Async Read logic & AXI SIGNALS declaration !
+
     always_comb begin
         next_state = state;
-        next_cache_valid = cache_valid;
-        next_cache_dirty = cache_dirty;
-        read_data = 32'b0;
-        axi.wlast = 1'b0;
+        next_beat_ptr = beat_ptr;
+        read_data = hit ? cache_data[req_data_index] : 32'b0;
+        axi.awid = 4'b0;
         axi.awaddr = 32'b0;
+        axi.awlen = AXI_LINE_LENGTH;
+        axi.awsize = 3'b010;
+        axi.awburst = 2'b01;
+        axi.awqos = 4'b0;
+        axi.awlock = 1'b0;
+        axi.awvalid = 1'b0;
+        axi.wdata = cache_data[{evict_line_index, beat_ptr}];
+        axi.wstrb = 4'b1111;
+        axi.wlast = 1'b0;
+        axi.wvalid = 1'b0;
+        axi.bready = 1'b0;
+        axi.arid = 4'b0;
         axi.araddr = 32'b0;
-
-        axi.wdata = cache_data[set_ptr];
-        next_set_ptr = set_ptr;
-        cache_state = state;
+        axi.arlen = AXI_LINE_LENGTH;
+        axi.arsize = 3'b010;
+        axi.arburst = 2'b01;
+        axi.arqos = 4'b0;
+        axi.arlock = 1'b0;
+        axi.arvalid = 1'b0;
+        axi.rready = 1'b0;
 
         case (state)
             IDLE: begin
-                if (read_enable && write_enable) begin
-                    $display("E : CAN't READ WRITE AT THE SAME TIME");
-                end
-
-                else if (invalidate) begin
+                next_beat_ptr = '0;
+                if (invalidate)
                     next_state = IDLE;
-                end
-                else if (flush && cache_valid && cache_dirty) begin
+                else if (flush && any_dirty)
+                    next_state = FLUSH_SCAN;
+                else if (!hit && (read_enable || actual_write_enable))
+                    next_state = (cache_valids[req_line_index] && cache_dirtys[req_line_index]) ?
+                                 SENDING_WRITE_REQ : SENDING_READ_REQ;
+            end
+            FLUSH_SCAN: begin
+                if (cache_valids[flush_scan_index] && cache_dirtys[flush_scan_index])
                     next_state = SENDING_WRITE_REQ;
-                end
-
-                else if (hit && read_enable) begin
-                    read_data = cache_data[req_index];
-                end
-
-                else if(~hit && (read_enable ^ actual_write_enable)) begin
-                // switch state to handle the MISS, if data is dirty, we have to write first
-                case(cache_dirty)
-                    1'b1 : next_state = SENDING_WRITE_REQ;
-                    1'b0 : next_state = SENDING_READ_REQ;
-                endcase
-                end
-                axi.awvalid = 1'b0;
-                axi.wvalid = 1'b0;
-                axi.bready = 1'b0;
-                axi.arvalid = 1'b0;
-                axi.rready = 1'b0;
-                next_set_ptr = 7'd0;
+                else if (flush_scan_index == LAST_LINE)
+                    next_state = IDLE;
             end
-
             SENDING_WRITE_REQ: begin
-                axi.awaddr = {cache_block_tag,7'b0000000,2'b00};
-                if (axi.awready) next_state = SENDING_WRITE_DATA;
-
-                //making the sending request.
+                axi.awaddr = {cache_tags[evict_line_index], evict_line_index,
+                              {OFFSET_BITS{1'b0}}, 2'b00};
                 axi.awvalid = 1'b1;
-                axi.wvalid = 1'b0;
-                axi.bready = 1'b0;
-                axi.arvalid = 1'b0;
-                axi.rready = 1'b0;
+                if (axi.awready) next_state = SENDING_WRITE_DATA;
             end
-
             SENDING_WRITE_DATA: begin
-                if (axi.wready) begin
-                    next_set_ptr = set_ptr + 1;
-                end
-                if (set_ptr == 7'd127) begin
-                    axi.wlast = 1'b1;
-                    if (axi.wready) begin
-                        next_state = WAITING_WRITE_RES;
-                    end
-                end
-                //sending data and write stuff
-                axi.awvalid = 1'b0;
                 axi.wvalid = 1'b1;
-                axi.bready = 1'b0;
-                // no read
-                axi.arvalid = 1'b0;
-                axi.rready = 1'b0;
+                axi.wlast = (beat_ptr == LAST_WORD);
+                if (axi.wready) begin
+                    if (beat_ptr == LAST_WORD) next_state = WAITING_WRITE_RES;
+                    else next_beat_ptr = beat_ptr + 1'b1;
+                end
             end
-
             WAITING_WRITE_RES: begin
-                if (axi.bvalid && (axi.bresp == 2'b00)) begin
-                    next_cache_dirty = 1'b0;
-                    next_state = flush_pending ? IDLE : SENDING_READ_REQ;
-                end else if (axi.bvalid && (axi.bresp != 2'b00)) begin
-                    next_state = IDLE;
-                end
-
-                //no write
-                axi.awvalid = 1'b0;
-                axi.wvalid = 1'b0;
                 axi.bready = 1'b1;
-
-                //no read
-                axi.arvalid = 1'b0;
-                axi.rready = 1'b0;
+                if (axi.bvalid) begin
+                    if (axi.bresp != 2'b00) next_state = IDLE;
+                    else if (miss_pending) next_state = SENDING_READ_REQ;
+                    else next_state = FLUSH_SCAN;
+                end
             end
-
             SENDING_READ_REQ: begin
-                // handle miss: read
-                axi.araddr = {req_block_tag, 7'b0000000, 2'b00}; // tag, set, offset
-
-                if(axi.arready) begin
-                    next_state = RECEIVING_READ_DATA;
-                end
-
-                // SENDING_READ_REQ AXI SIGNALS : address request
-                // No write
-                axi.awvalid = 1'b0;
-                axi.wvalid = 1'b0;
-                axi.bready = 1'b0;
-                // No read but address is okay
+                axi.araddr = {pending_tag, pending_line_index,
+                              {OFFSET_BITS{1'b0}}, 2'b00};
                 axi.arvalid = 1'b1;
-                axi.rready = 1'b0;
-
+                if (axi.arready) next_state = RECEIVING_READ_DATA;
             end
-
             RECEIVING_READ_DATA: begin
-                if (axi.rvalid && axi.rresp != 2'b00) begin
-                    next_state = IDLE;
-                    next_cache_valid = 1'b0;
-                end else if (axi.rvalid) begin
-                // Increment pointer on valid data
-                    next_set_ptr = set_ptr + 1;
-
-                    if (axi.rlast) begin
-                        // Transition to IDLE on the last beat
-                        next_state = IDLE;
-                        next_cache_valid = 1'b1;
-                    end
-                end
-
-                // AXI Signals
-                axi.awvalid = 1'b0;
-                axi.wvalid = 1'b0;
-                axi.bready = 1'b0;
-                axi.arvalid = 1'b0;
                 axi.rready = 1'b1;
+                if (axi.rvalid) begin
+                    if (axi.rlast) next_state = IDLE;
+                    else next_beat_ptr = beat_ptr + 1'b1;
+                end
             end
-
-            default: begin
-                $display("CACHE FSM STATE ERROR");
-            end
+            default: next_state = IDLE;
         endcase
     end
 
-
-    //Invariant AXI Signals
-    //WRITE Burst sieze are fixed type & len
-    assign axi.awlen = CACHE_SIZE-1; // full cache reloaded each time
-    assign axi.awsize = 3'b010; // 2^<awsize> = 2^2 = 4 Bytes
-    assign axi.awburst = 2'b01; // INCREMENT
-    // READ Burst sizes are fixed type & len
-    assign axi.arlen = CACHE_SIZE-1; // full cache reloaded each time
-    assign axi.arsize = 3'b010; // 2^<arsize> = 2^2 = 4 Bytes
-    assign axi.arburst = 2'b01; // INCREMENT
-    // W/R ids are always 0 (todo maybe not)
-    assign axi.awid = 4'b0000;
-    assign axi.arid = 4'b0000;
-
-
-    //write data
-    assign axi.wstrb = 4'b1111;
-
-
-
-
-
+    wire unused_aclk = aclk;
 endmodule

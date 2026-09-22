@@ -19,6 +19,7 @@ package instruction_set_pkg;
       WAITING_WRITE_RES,
       SENDING_READ_REQ, // Data miss ! We have to fetch from memory ! State for as long as the req has not been acknowleged by memory slave
       RECEIVING_READ_DATA,  // Once REQ is acknowleged, we wait for full response. (tlast)
+      FLUSH_SCAN,
       // AXI LITE VERSIONS
       LITE_SENDING_WRITE_REQ,
       LITE_SENDING_WRITE_DATA,
@@ -125,7 +126,8 @@ package instruction_set_pkg;
   // SYSTEM instruction immediate encodings supported by the core.
   typedef enum logic [11:0] {
     ECALL  = 12'h000,
-    EBREAK = 12'h001
+    EBREAK = 12'h001,
+    MRET   = 12'h302
   } system_imm_t;
 
   localparam logic [3:0] DataCount = 4'h2;

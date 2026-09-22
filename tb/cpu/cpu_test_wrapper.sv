@@ -68,8 +68,6 @@ module cpu_test_harness (
     cpu core (
         .clk(clk),
         .rst_n(rst_n),
-        .trap_ack(1'b0),
-        .trap_handler_pc(32'b0),
         .m_axi(m_axi)
     );
 endmodule

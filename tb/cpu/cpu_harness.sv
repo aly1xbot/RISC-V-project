@@ -95,10 +95,6 @@ logic [31:0] core_trap_pc;
 cpu core(
     .clk(clk), 
     .rst_n(rst_n),
-    // The simulation environment handles traps by skipping the faulting
-    // instruction. A system integration can redirect to a real handler.
-    .trap_ack(core_trap_valid),
-    .trap_handler_pc(core_trap_pc + 32'd4),
     .trap_valid(core_trap_valid),
     .trap_cause(core_trap_cause),
     .trap_pc(core_trap_pc),
@@ -174,12 +170,14 @@ initial begin
         core.instr_cache.cache_data[preload_index] = ram[preload_index];
         core.data_cache.cache_data[preload_index] = ram[1024 + preload_index];
     end
-    core.instr_cache.cache_block_tag = '0;
-    core.instr_cache.cache_valid = 1'b1;
-    core.instr_cache.cache_dirty = 1'b0;
-    core.data_cache.cache_block_tag = 23'd8;
-    core.data_cache.cache_valid = 1'b1;
-    core.data_cache.cache_dirty = 1'b0;
+    for (int line_index = 0; line_index < 32; line_index++) begin
+        core.instr_cache.cache_tags[line_index] = '0;
+        core.instr_cache.cache_valids[line_index] = 1'b1;
+        core.instr_cache.cache_dirtys[line_index] = 1'b0;
+        core.data_cache.cache_tags[line_index] = 23'd8;
+        core.data_cache.cache_valids[line_index] = 1'b1;
+        core.data_cache.cache_dirtys[line_index] = 1'b0;
+    end
 end
 
 always_ff @(posedge clk) begin

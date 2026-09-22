@@ -24,6 +24,7 @@ A fully functional 32-bit RISC-V CPU supporting a broad subset of the RV32I base
 | **Branch** | `BEQ` |
 | **Jump** | `JAL` |
 | **Upper Immediate** | `LUI`, `AUIPC` |
+| **Memory Ordering** | `FENCE`, `FENCE.TSO`, `FENCE.I` (`Zifencei`) |
 
 That's **25+ distinct instruction encodings** — covering R, I, S, B, J, and U-type formats — each tested with randomised and directed vectors.
 
@@ -104,6 +105,16 @@ cd tb && python testrunner.py
 - **No off-the-shelf IP** — every module is hand-written: no vendor cores, no generated RTL
 - **Immediate encoding by hand** — the sign-extend module handles all 5 RISC-V immediate formats from first principles, which turned out to be one of the trickiest parts of RV32I
 - **Anti-latch discipline** — default assignments in every `always_comb` block prevent synthesis surprises
+
+`FENCE`/`FENCE.TSO` use a conservative write-back data-cache flush. `FENCE.I` first flushes
+dirty data-cache contents and then invalidates the instruction cache, corresponding to the
+ratified `Zifencei` extension.
+
+The CPU reports exceptions through `trap_valid`, `trap_cause`, and `trap_pc`. An external
+execution environment resumes the core by asserting `trap_ack` and supplying
+`trap_handler_pc`. Implemented synchronous causes include instruction/load/store address
+misalignment, instruction/load/store access faults, illegal instructions, breakpoints, and
+environment calls.
 
 ---
 

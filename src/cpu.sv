@@ -1,6 +1,8 @@
 module cpu (
     input logic clk,
     input logic rst_n,
+    input logic trap_ack,
+    input logic [31:0] trap_handler_pc,
     axi_if.master m_axi,
 
     // OUTGOING DEBUG SIGNALS
@@ -44,6 +46,9 @@ assign trap_pc = pc;
 logic i_cache_stall;
 logic d_cache_stall;
 logic data_cache_flush_done;
+logic instr_cache_invalidate_done;
+logic i_cache_error;
+logic d_cache_error;
 logic [6:0] data_set_ptr;
 logic [6:0] data_next_set_ptr;
 logic [31:0] pc;
@@ -57,10 +62,55 @@ logic mem_write;
 logic data_read_enable;
 logic data_write_enable;
 logic control_trap_valid;
+logic [4:0] control_trap_cause;
+logic data_misaligned;
+logic target_misaligned;
 
-assign data_read_enable = mem_read_enable && !i_cache_stall;
-assign data_write_enable = mem_write && !i_cache_stall;
-assign trap_valid = control_trap_valid && !i_cache_stall;
+localparam logic [1:0] FENCE_I_IDLE       = 2'b00;
+localparam logic [1:0] FENCE_I_FLUSH      = 2'b01;
+localparam logic [1:0] FENCE_I_INVALIDATE = 2'b10;
+localparam logic [1:0] FENCE_I_COMPLETE   = 2'b11;
+logic [1:0] fence_i_state;
+logic fence_i_hold;
+logic stall;
+
+assign data_read_enable = mem_read_enable && !i_cache_stall &&
+                          !data_misaligned && !control_trap_valid &&
+                          !d_cache_error;
+assign data_write_enable = mem_write && !i_cache_stall &&
+                           !data_misaligned && !control_trap_valid &&
+                           !d_cache_error;
+assign fence_i_hold = ((fence_i_state == FENCE_I_IDLE) && fence_i) ||
+                      (fence_i_state == FENCE_I_FLUSH) ||
+                      (fence_i_state == FENCE_I_INVALIDATE);
+assign stall = i_cache_stall || d_cache_stall || fence_i_hold ||
+               (fence && !data_cache_flush_done);
+
+always_ff @(posedge clk) begin
+    if (!rst_n) begin
+        fence_i_state <= FENCE_I_IDLE;
+    end else if (trap_ack) begin
+        fence_i_state <= FENCE_I_IDLE;
+    end else begin
+        case (fence_i_state)
+            FENCE_I_IDLE: begin
+                if (fence_i && !i_cache_stall)
+                    fence_i_state <= data_cache_flush_done ?
+                                     FENCE_I_INVALIDATE : FENCE_I_FLUSH;
+            end
+            FENCE_I_FLUSH: begin
+                if (data_cache_flush_done)
+                    fence_i_state <= FENCE_I_INVALIDATE;
+            end
+            FENCE_I_INVALIDATE: begin
+                if (instr_cache_invalidate_done)
+                    fence_i_state <= FENCE_I_COMPLETE;
+            end
+            FENCE_I_COMPLETE: fence_i_state <= FENCE_I_IDLE;
+            default: fence_i_state <= FENCE_I_IDLE;
+        endcase
+    end
+end
 
 cache_state_t i_cache_state;
 cache_state_t d_cache_state;
@@ -71,13 +121,17 @@ cache instr_cache(
 
     .address(pc),
     .read_data(instruction),
-    .read_enable(1'b1),
+    .read_enable(!i_cache_error),
     .write_data(32'd0),
     .write_enable(1'b0),
     .flush(1'b0),
+    .invalidate(fence_i_state == FENCE_I_INVALIDATE),
+    .clear_error(trap_ack),
     .byte_enable(4'b0000),
     .cache_stall(i_cache_stall),
     .flush_done(),
+    .invalidate_done(instr_cache_invalidate_done),
+    .access_error(i_cache_error),
 
     .axi(m_axi_inst),
     .cache_state(i_cache_state),
@@ -96,10 +150,16 @@ cache data_cache(
     .read_enable(data_read_enable),
     .write_data(mem_write_data),
     .write_enable(data_write_enable),
-    .flush(fence && !i_cache_stall),
+    .flush(!d_cache_error && ((fence && !i_cache_stall) ||
+           (fence_i_state == FENCE_I_FLUSH) ||
+           ((fence_i_state == FENCE_I_IDLE) && fence_i && !i_cache_stall))),
     .byte_enable(mem_byte_enable),
     .cache_stall(d_cache_stall),
     .flush_done(data_cache_flush_done),
+    .invalidate(1'b0),
+    .clear_error(trap_ack),
+    .invalidate_done(),
+    .access_error(d_cache_error),
 
     .axi(m_axi_data),
     .cache_state(d_cache_state),
@@ -140,13 +200,15 @@ wire reg_write;
 wire alu_source;
 wire [1:0] write_back_source;
 wire fence;
+wire fence_i;
 
 
 assign pc_plus_four = pc + 4;
 
 always_comb begin : pc_select
-    if (trap_valid || i_cache_stall || d_cache_stall ||
-        (fence && !data_cache_flush_done)) begin
+    if (trap_valid) begin
+        pc_next = trap_ack ? trap_handler_pc : pc;
+    end else if (stall) begin
         pc_next = pc;
     end else begin
         case (pc_source)
@@ -193,6 +255,44 @@ assign alu_last_bit = last_bit;
 logic alu_unsigned_less;
 assign alu_unsigned_less = unsigned_less;
 
+always_comb begin : alignment_checks
+    data_misaligned = 1'b0;
+    if (mem_read_enable || mem_write) begin
+        case (f3)
+            F3_WORD: data_misaligned = |alu_result[1:0];
+            F3_HALFWORD, F3_HALFWORD_U: data_misaligned = alu_result[0];
+            default: data_misaligned = 1'b0;
+        endcase
+    end
+    target_misaligned = pc_source && |pc_plus_second_add[1:0];
+end
+
+always_comb begin : trap_select
+    trap_valid = 1'b0;
+    trap_cause = 5'd0;
+    if (!i_cache_stall) begin
+        if (i_cache_error) begin
+            trap_valid = 1'b1;
+            trap_cause = 5'd1; // Instruction access fault
+        end else if (d_cache_error) begin
+            trap_valid = 1'b1;
+            trap_cause = mem_write ? 5'd7 : 5'd5; // Store/load access fault
+        end else if (target_misaligned || |pc[1:0]) begin
+            trap_valid = 1'b1;
+            trap_cause = 5'd0; // Instruction-address-misaligned
+        end else if (data_misaligned && mem_read_enable) begin
+            trap_valid = 1'b1;
+            trap_cause = 5'd4; // Load-address-misaligned
+        end else if (data_misaligned && mem_write) begin
+            trap_valid = 1'b1;
+            trap_cause = 5'd6; // Store/AMO-address-misaligned
+        end else if (control_trap_valid) begin
+            trap_valid = 1'b1;
+            trap_cause = control_trap_cause;
+        end
+    end
+end
+
 control control(
     .op(op),
     .func3(f3),
@@ -209,13 +309,14 @@ control control(
     .mem_write (mem_write),
     .mem_read (mem_read_enable),
     .fence(fence),
+    .fence_i(fence_i),
     .imm_source (imm_source),
     .alu_source (alu_source),
     .write_back_source (write_back_source),
     .pc_source (pc_source),
     .second_add_source(second_add_source),
     .trap_valid(control_trap_valid),
-    .trap_cause(trap_cause)
+    .trap_cause(control_trap_cause)
 
 );
 

@@ -1,0 +1,9 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1790091177" />
+    <testcase name="cpu_insrt_test" classname="test_cpu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cpu/test_cpu.py" lineno="65" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="cpu_fence_tso_and_fence_i_test" classname="test_cpu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cpu/test_cpu.py" lineno="518" time="0.05074667930603027" sim_time_ns="3425.0" ratio_time="67492.10089876766" />
+  </testsuite>
+</testsuites>

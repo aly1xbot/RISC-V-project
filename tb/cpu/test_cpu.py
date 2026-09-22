@@ -514,3 +514,36 @@ async def cpu_insrt_test(dut):
 
     await RisingEdge(dut.clk) # lhu x21 -6(x7)
     assert binary_to_hex(dut.regfile.registers[21].value) == "0000DEAD"
+
+@cocotb.test()
+async def cpu_fence_tso_and_fence_i_test(dut):
+    """Execute the appended FENCE.TSO/FENCE.I sequence in the CPU image."""
+    await cpu_reset(dut)
+    # The appended instructions begin at byte address 0x164.
+    for _ in range(3000):
+        if int(dut.core.pc.value) == 0x164:
+            break
+        await RisingEdge(dut.clk)
+    else:
+        raise RuntimeError("CPU did not reach appended fence test sequence")
+
+    # FENCE.TSO is decoded as a data-cache fence and does not write x0.
+    assert int(dut.core.instruction.value) == 0x8330000F
+    assert int(dut.core.fence.value) == 1
+    await RisingEdge(dut.clk)
+
+    # FENCE.I is decoded as instruction-cache invalidation and then advances.
+    for _ in range(3000):
+        if int(dut.core.pc.value) == 0x168:
+            break
+        await RisingEdge(dut.clk)
+    else:
+        raise RuntimeError("CPU did not advance past FENCE.TSO")
+    assert int(dut.core.instruction.value) == 0x0000100F
+    assert int(dut.core.fence_i.value) == 1
+    await RisingEdge(dut.clk)
+    for _ in range(3000):
+        if int(dut.core.pc.value) == 0x16C:
+            break
+        await RisingEdge(dut.clk)
+    assert int(dut.core.instr_cache.cache_valid.value) == 1

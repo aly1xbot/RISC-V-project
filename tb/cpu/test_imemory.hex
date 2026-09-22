@@ -90,3 +90,6 @@ FFA3DA83  //                    lhu x21 -6(x7)      | x21 <= 0000DEAD
 00000013  //NOP
 00000013  //This program was translated in HEX by hand. Please help.
 // NOPs (...)
+8330000F  // FENCE.TSO test: flush prior stores before continuing
+0000100F  // FENCE.I test: invalidate instruction cache (Zifencei)
+00000013  // post-fence instruction

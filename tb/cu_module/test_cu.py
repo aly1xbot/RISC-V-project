@@ -420,3 +420,27 @@ async def jalr_control_test(dut):
     assert dut.write_back_source.value == "10"
     assert dut.second_add_source.value == "10"
 
+
+@cocotb.test()
+async def fence_tso_control_test(dut):
+    """FENCE.TSO uses the conservative data-cache fence path."""
+    await set_unknown(dut)
+    dut.op.value = 0b0001111       # MISC-MEM
+    dut.func3.value = 0b000        # FENCE/FENCE.TSO
+    await Timer(1, units="ns")
+    assert dut.fence.value == "1"
+    assert dut.fence_i.value == "0"
+    assert dut.reg_write.value == "0"
+    assert dut.mem_write.value == "0"
+
+@cocotb.test()
+async def fence_i_control_test(dut):
+    """FENCE.I selects instruction-cache invalidation."""
+    await set_unknown(dut)
+    dut.op.value = 0b0001111       # MISC-MEM
+    dut.func3.value = 0b001        # FENCE.I (Zifencei)
+    await Timer(1, units="ns")
+    assert dut.fence.value == "0"
+    assert dut.fence_i.value == "1"
+    assert dut.reg_write.value == "0"
+    assert dut.mem_write.value == "0"

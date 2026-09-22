@@ -21,6 +21,7 @@ module control(
     output logic [1:0]second_add_source,
     output logic mem_read,
     output logic fence,
+    output logic fence_i,
     output logic trap_valid,
     output logic [4:0] trap_cause
 );
@@ -44,86 +45,93 @@ always_comb begin
     second_add_source = 2'b00; 
     mem_read = 1'b0;
     fence = 1'b0;
-    trap_valid = 1'b0;
-    trap_cause = 5'd0;
+    fence_i = 1'b0;
+    // Unknown or reserved encodings trap instead of silently acting as NOPs.
+    trap_valid = 1'b1;
+    trap_cause = 5'd2; // Illegal instruction
     // lw command and sw command 
     case(op)
         // and command
         OPCODE_I_TYPE_LOAD: begin
-            reg_write = 1'b1;
-            imm_source = 3'b000;
-            mem_write = 1'b0;
-            alu_op = 2'b00;
-            alu_source = 1'b1;
-            write_back_source = 2'b01;
-            branch = 1'b0; 
-            mem_read = 1'b1;
+            if (func3 == F3_BYTE || func3 == F3_HALFWORD ||
+                func3 == F3_WORD || func3 == F3_BYTE_U ||
+                func3 == F3_HALFWORD_U) begin
+                trap_valid = 1'b0;
+                reg_write = 1'b1;
+                imm_source = 3'b000;
+                alu_op = 2'b00;
+                alu_source = 1'b1;
+                write_back_source = 2'b01;
+                mem_read = 1'b1;
+            end
         
         end
         OPCODE_S_TYPE : begin
-            reg_write = 1'b0;
-            imm_source = 3'b001;
-            mem_write = 1'b1;
-            alu_op = 2'b00;
-            alu_source = 1'b1;
-            branch = 1'b0; 
-            mem_read=1'b0;
+            if (func3 == F3_BYTE || func3 == F3_HALFWORD ||
+                func3 == F3_WORD) begin
+                trap_valid = 1'b0;
+                imm_source = 3'b001;
+                mem_write = 1'b1;
+                alu_op = 2'b00;
+                alu_source = 1'b1;
+            end
         end
         // R-type command verification
         OPCODE_R_TYPE : begin
-            reg_write = 1'b1;
-            mem_write = 1'b0;
-            alu_op = 2'b10;
-            alu_source = 1'b0;
-            write_back_source = 2'b00;
-            branch = 1'b0; 
-            mem_read=1'b0;
+            case (func3)
+                F3_ADD_SUB: trap_valid = !((func7 == F7_ADD) || (func7 == F7_SUB));
+                F3_SRL_SRA: trap_valid = !((func7 == F7_SLL_SRL) || (func7 == F7_SRA));
+                default: trap_valid = (func7 != 7'b0000000);
+            endcase
+            if (!trap_valid) begin
+                reg_write = 1'b1;
+                alu_op = 2'b10;
+                write_back_source = 2'b00;
+            end
 
         end
         // B-type instruction
         OPCODE_B_TYPE : begin
-            reg_write = 1'b0;
-            imm_source = 3'b010;
-            alu_source = 1'b0;
-            mem_write = 1'b0;
-            alu_op = 2'b01;
-            branch = 1'b1;
-            mem_read=1'b0;
+            if (func3 == F3_BEQ || func3 == F3_BNE ||
+                func3 == F3_BLT || func3 == F3_BGE ||
+                func3 == F3_BLTU || func3 == F3_BGEU) begin
+                trap_valid = 1'b0;
+                imm_source = 3'b010;
+                alu_op = 2'b01;
+                branch = 1'b1;
+            end
 
         end
         // j_type jal instruction
-        OPCODE_J_TYPE, OPCODE_J_TYPE_JALR : begin
+        OPCODE_J_TYPE: begin
+            trap_valid = 1'b0;
             reg_write = 1'b1;
             imm_source = 3'b011;
-            alu_source = 1'b0;
-            mem_write = 1'b0;
-            branch = 1'b0;
             jump = 1'b1;
-            mem_read=1'b0;
             write_back_source = 2'b10;
-            if(op[3]) begin// jal
-                second_add_source = 2'b00;
-                imm_source = 3'b011;
-            end         
-            else if (~op[3]) begin // jalr
+            second_add_source = 2'b00;
+        end
+        OPCODE_J_TYPE_JALR: begin
+            if (func3 == 3'b000) begin
+                trap_valid = 1'b0;
+                reg_write = 1'b1;
+                jump = 1'b1;
+                write_back_source = 2'b10;
                 second_add_source = 2'b10;
                 imm_source = 3'b000;
-                // JALR is defined only for funct3=000.
-                if (func3 != 3'b000) begin
-                    reg_write = 1'b0;
-                    jump = 1'b0;
-                end
-            end   
+            end
         end
         // addi instruction, all the I-type instruction and all the R-type instruction
         OPCODE_I_TYPE_ALU : begin
-            // RV32I shift-immediate encodings reserve bits [31:25].  Do
-            // not accidentally treat an unsupported encoding as ADDI; the
-            // test image deliberately contains these invalid shift words to
-            // verify that they leave the destination register unchanged.
-            reg_write = !((func3 == F3_SLL && func7 != F7_SLL_SRL) ||
-                          (func3 == F3_SRL_SRA &&
-                           func7 != F7_SLL_SRL && func7 != F7_SRA));
+            // RV32I shift-immediate encodings reserve bits [31:25]. Invalid
+            // encodings raise the illegal-instruction trap selected above.
+            if (func3 == F3_SLL)
+                trap_valid = (func7 != F7_SLL_SRL);
+            else if (func3 == F3_SRL_SRA)
+                trap_valid = !((func7 == F7_SLL_SRL) || (func7 == F7_SRA));
+            else
+                trap_valid = 1'b0;
+            reg_write = !trap_valid;
             imm_source = 3'b000;
             alu_source = 1'b1; //imm
             mem_write = 1'b0;
@@ -135,6 +143,7 @@ always_comb begin
         end
         // U-type command
         OPCODE_U_TYPE_LUI: begin  // LUI
+            trap_valid = 1'b0;
             imm_source = 3'b100;
             mem_write = 1'b0;
             reg_write = 1'b1;
@@ -145,6 +154,7 @@ always_comb begin
             mem_read=1'b0;
         end
         OPCODE_U_TYPE_AUIPC: begin  // AUIPC
+            trap_valid = 1'b0;
             imm_source = 3'b100;
             mem_write = 1'b0;
             reg_write = 1'b1;
@@ -158,8 +168,13 @@ always_comb begin
         // FENCE and FENCE.TSO (funct3=000) use the conservative full
         // data-cache flush implemented by the CPU/cache interface.
         OPCODE_MISC_MEM: begin
-            if (func3 == 3'b000)
+            if (func3 == 3'b000) begin
+                trap_valid = 1'b0;
                 fence = 1'b1;
+            end else if (func3 == 3'b001) begin
+                trap_valid = 1'b0;
+                fence_i = 1'b1;
+            end
         end
 
         // This core has no privileged trap vector/CSR implementation yet.
@@ -176,14 +191,7 @@ always_comb begin
         end
 
         
-        default: begin
-            reg_write = 1'b0;
-            imm_source = 3'b000;
-            mem_write = 1'b0;
-            alu_op = 2'b00;
-            mem_read=1'b0;
-        
-        end   
+        default: begin end
     endcase
 end
 

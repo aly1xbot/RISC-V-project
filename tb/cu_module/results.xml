@@ -1,0 +1,76 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1790091050" />
+    <testcase name="lw_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="23" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="sw_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="39" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="r_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="56" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="andi_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="70" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="ori_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="83" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="beq_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="98" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="J_type_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="124" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="addi_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="142" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="auipc_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="158" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="slti_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="172" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="sltiu_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="187" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="xori_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="202" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="slli_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="219" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="srli_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="235" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="srai_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="255" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="add_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="273" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="sub_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="290" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="blt_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="306" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="bne_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="333" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="bge_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="350" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="bltu_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="369" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="bgeu_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="388" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="jalr_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="407" time="0" sim_time_ns="0" ratio_time="0">
+      <skipped />
+    </testcase>
+    <testcase name="fence_tso_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="424" time="0.006723165512084961" sim_time_ns="3.0" ratio_time="446.2183765381751" />
+    <testcase name="fence_i_control_test" classname="test_cu" file="/Users/luokai/Documents/GitHub/RISC-V-project/tb/cu_module/test_cu.py" lineno="436" time="0.0027179718017578125" sim_time_ns="3.0000000000000004" ratio_time="1103.764210526316" />
+  </testsuite>
+</testsuites>

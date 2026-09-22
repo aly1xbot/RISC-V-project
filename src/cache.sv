@@ -14,10 +14,14 @@ module cache #(
     input logic read_enable,
     input logic write_enable,
     input logic flush,
+    input logic invalidate,
+    input logic clear_error,
     input logic [3:0]byte_enable,
     output logic [31:0] read_data,
     output logic cache_stall,
     output logic flush_done,
+    output logic invalidate_done,
+    output logic access_error,
     output cache_state_t cache_state,
     //debug signal
     output logic [6:0] set_ptr_out,
@@ -36,6 +40,7 @@ module cache #(
     assign comb_stall = (next_state != IDLE) | (~hit & (read_enable | actual_write_enable));
     assign cache_stall = comb_stall | seq_stall;
     assign flush_done = (state == IDLE) && !cache_dirty;
+    assign invalidate_done = (state == IDLE) && !cache_valid;
 
 
     // Here is how a cache line is organized:
@@ -85,10 +90,22 @@ module cache #(
             cache_dirty <= 1'b0;
             seq_stall <= 1'b0;
             flush_pending <= 1'b0;
+            access_error <= 1'b0;
         end else begin
             cache_valid <= next_cache_valid;
             cache_dirty <= next_cache_dirty;
             seq_stall <= comb_stall;
+
+            if (clear_error)
+                access_error <= 1'b0;
+            else if ((state == WAITING_WRITE_RES && axi.bvalid &&
+                      axi.bresp != 2'b00) ||
+                     (state == RECEIVING_READ_DATA && axi.rvalid &&
+                      axi.rresp != 2'b00))
+                access_error <= 1'b1;
+
+            if (invalidate && state == IDLE)
+                cache_valid <= 1'b0;
 
             if(hit & write_enable & state == IDLE) begin
                 cache_data[req_index] <=
@@ -97,7 +114,8 @@ module cache #(
                 cache_dirty <= 1'b1;
             end
             // More on this else if just below
-            else if(axi.rvalid & state == RECEIVING_READ_DATA & axi.rready) begin
+            else if(axi.rvalid & state == RECEIVING_READ_DATA & axi.rready &&
+                    axi.rresp == 2'b00) begin
                 // Write incomming axi read
                 cache_data[set_ptr] <= axi.rdata;
                 if(axi.rready & axi.rlast) begin
@@ -128,7 +146,10 @@ module cache #(
         next_state = state;
         next_cache_valid = cache_valid;
         next_cache_dirty = cache_dirty;
+        read_data = 32'b0;
         axi.wlast = 1'b0;
+        axi.awaddr = 32'b0;
+        axi.araddr = 32'b0;
 
         axi.wdata = cache_data[set_ptr];
         next_set_ptr = set_ptr;
@@ -140,6 +161,9 @@ module cache #(
                     $display("E : CAN't READ WRITE AT THE SAME TIME");
                 end
 
+                else if (invalidate) begin
+                    next_state = IDLE;
+                end
                 else if (flush && cache_valid && cache_dirty) begin
                     next_state = SENDING_WRITE_REQ;
                 end
@@ -199,7 +223,7 @@ module cache #(
                     next_cache_dirty = 1'b0;
                     next_state = flush_pending ? IDLE : SENDING_READ_REQ;
                 end else if (axi.bvalid && (axi.bresp != 2'b00)) begin
-                    $display("ERROR WRITING TO MAIN MEMORY");
+                    next_state = IDLE;
                 end
 
                 //no write
@@ -232,7 +256,10 @@ module cache #(
             end
 
             RECEIVING_READ_DATA: begin
-                if (axi.rvalid) begin
+                if (axi.rvalid && axi.rresp != 2'b00) begin
+                    next_state = IDLE;
+                    next_cache_valid = 1'b0;
+                end else if (axi.rvalid) begin
                 // Increment pointer on valid data
                     next_set_ptr = set_ptr + 1;
 

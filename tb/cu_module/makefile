@@ -6,6 +6,7 @@ TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --trace --trace-structs
 WAVES = 1
 
+VERILOG_SOURCES += /Users/luokai/Documents/GitHub/RISC-V-project/src/instruction_set.sv
 VERILOG_SOURCES += /Users/luokai/Documents/GitHub/RISC-V-project/src/cu.sv
 
 # use VHDL_SOURCES for VHDL files

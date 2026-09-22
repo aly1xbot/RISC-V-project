@@ -87,10 +87,21 @@ module cpu_test_harness (
 axi_if m_axi();
 // axi_lite_if m_axi_lite();
 
+logic core_trap_valid;
+logic [4:0] core_trap_cause;
+logic [31:0] core_trap_pc;
+
 /* verilator lint_off PINMISSING */
 cpu core(
     .clk(clk), 
     .rst_n(rst_n),
+    // The simulation environment handles traps by skipping the faulting
+    // instruction. A system integration can redirect to a real handler.
+    .trap_ack(core_trap_valid),
+    .trap_handler_pc(core_trap_pc + 32'd4),
+    .trap_valid(core_trap_valid),
+    .trap_cause(core_trap_cause),
+    .trap_pc(core_trap_pc),
 
     // AXI Master Interface
     .m_axi(m_axi)
